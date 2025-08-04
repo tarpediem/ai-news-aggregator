@@ -1,20 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Newspaper, Brain, RefreshCw, Github, Moon, Sun, Sparkles, Zap, Settings } from 'lucide-react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-import { useCircuitBreaker } from './utils/circuitBreaker';
-
-import { AccessibilityProvider, SkipToContent } from './components/AccessibilityProvider';
 import { AIEnhancedNewsCard } from './components/AIEnhancedNewsCard';
 import { ArxivCard } from './components/ArxivCard';
 import { CategoryFilter } from './components/CategoryFilter';
 import { SearchBar } from './components/SearchBar';
-import SettingsPanel from './components/SettingsPanel';
 import { LoadingState } from './components/SkeletonLoader';
 import { TrendingTopics } from './components/TrendingTopics';
-import { InteractiveHoverButton } from './components/ui/interactive-hover-button';
-import { ShimmerButton } from './components/ui/shimmer-button';
-import { VirtualizedNewsList, useResponsiveGrid } from './components/VirtualizedNewsList';
 import { useNews, useArxivPapers, useSearchNews, useRefreshNews } from './hooks/useNews';
 import { cn } from './lib/utils';
 import type { NewsCategory } from './types/news';
@@ -28,38 +21,23 @@ const queryClient = new QueryClient({
   },
 });
 
-// Initialize store subscriptions with loop protection
-let subscriptionsInitialized = false;
-if (!subscriptionsInitialized && typeof window !== 'undefined') {
-  try {
-    import('./store/AppStore').then(({ setupStoreSubscriptions }) => {
-      setupStoreSubscriptions();
-      subscriptionsInitialized = true;
-      console.log('✅ Store subscriptions initialized with loop protection');
-    });
-  } catch (error) {
-    console.warn('Failed to setup store subscriptions:', error);
-  }
-}
+// NUCLEAR OPTION: Ultra-minimal version without store subscriptions
+console.log('🚨 NUCLEAR MODE: All complex features disabled to prevent infinite loops');
 
 function AppContent() {
-  // Circuit breaker protection
-  const shouldRender = useCircuitBreaker('AppContent');
-  
+  // NUCLEAR SIMPLIFICATION: Minimal state only
   const [activeTab, setActiveTab] = useState<'news' | 'papers'>('news');
   const [selectedCategory, setSelectedCategory] = useState<NewsCategory | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [useVirtualization, setUseVirtualization] = useState(true);
-  const [showSettings, setShowSettings] = useState(false);
-  const [enableAISummary] = useState(true);
   
-  // Use refs to prevent stale closures and unnecessary re-renders
+  // NUCLEAR: Disable ALL complex features
+  const showSettings = false;
+  const useVirtualization = false;
+  const enableAISummary = false;
+  
+  // SIMPLIFIED: Remove all complex refs
   const darkModeInitialized = useRef(false);
-  const lastSearchQuery = useRef('');
-  
-  // Responsive grid configuration
-  const { itemsPerRow, containerHeight } = useResponsiveGrid();
 
   // Use news hooks
   const { data: newsData, isLoading: newsLoading, error: newsError } = useNews(
@@ -69,78 +47,38 @@ function AppContent() {
   const { data: searchResults, isLoading: searchLoading } = useSearchNews(searchQuery);
   const refreshNews = useRefreshNews();
 
-  // Memoized handlers to prevent unnecessary re-renders
-  const handleSearch = useCallback((query: string) => {
-    // Prevent duplicate search queries
-    if (lastSearchQuery.current === query) {
-      console.log('🔍 Search query unchanged, skipping update');
-      return;
-    }
-    
-    console.log(`🔍 Search query: "${lastSearchQuery.current}" → "${query}"`);
-    lastSearchQuery.current = query;
+  // NUCLEAR SIMPLIFICATION: Ultra-simple handlers
+  const handleSearch = (query: string) => {
     setSearchQuery(query);
-  }, []);
+  };
 
-  const handleTopicClick = useCallback((topic: string) => {
-    console.log(`📌 Topic clicked: ${topic}`);
-    handleSearch(topic);
-  }, [handleSearch]);
+  const handleTopicClick = (topic: string) => {
+    setSearchQuery(topic);
+  };
 
-  const handleRefresh = useCallback(() => {
-    console.log('🔄 Refreshing news...');
-    refreshNews();
-  }, [refreshNews]);
+  const handleRefresh = () => {
+    window.location.reload();
+  };
 
-  const toggleDarkMode = useCallback(() => {
-    setIsDarkMode(current => {
-      const newDarkMode = !current;
-      console.log(`🌓 Toggle dark mode: ${current} → ${newDarkMode}`);
-      
-      document.documentElement.classList.toggle('dark', newDarkMode);
-      localStorage.setItem('darkMode', JSON.stringify(newDarkMode));
-      
-      return newDarkMode;
-    });
-  }, []);
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode;
+    console.log(`🌓 Toggle dark mode: ${isDarkMode} → ${newDarkMode}`);
+    setIsDarkMode(newDarkMode);
+    document.documentElement.classList.toggle('dark', newDarkMode);
+    localStorage.setItem('darkMode', JSON.stringify(newDarkMode));
+  };
 
-  // Initialize dark mode from localStorage - ONCE ONLY with ref protection
+  // NUCLEAR SIMPLIFICATION: Ultra-simple dark mode initialization
   useEffect(() => {
-    if (darkModeInitialized.current) {
-      console.warn('🚫 Dark mode already initialized, preventing duplicate initialization');
-      return;
-    }
-    
-    console.log('🌓 Initializing dark mode from localStorage');
+    if (darkModeInitialized.current) return;
     darkModeInitialized.current = true;
     
-    try {
-      const savedDarkMode = localStorage.getItem('darkMode');
-      if (savedDarkMode) {
-        const isDark = JSON.parse(savedDarkMode);
-        console.log(`💾 Loaded dark mode from storage: ${isDark}`);
-        
-        // Use callback to prevent state update if already correct
-        setIsDarkMode(currentMode => {
-          if (currentMode === isDark) {
-            console.log('🔄 Dark mode already correct, skipping update');
-            return currentMode;
-          }
-          
-          console.log(`🌓 Setting dark mode: ${currentMode} → ${isDark}`);
-          document.documentElement.classList.toggle('dark', isDark);
-          return isDark;
-        });
-      } else {
-        console.log('🆕 No saved dark mode, using default (light)');
-        document.documentElement.classList.remove('dark');
-      }
-    } catch (error) {
-      console.error('❌ Error initializing dark mode:', error);
-      setIsDarkMode(false);
-      document.documentElement.classList.remove('dark');
+    const savedDarkMode = localStorage.getItem('darkMode');
+    if (savedDarkMode === 'true') {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
     }
-  }, []); // Empty dependency array - run ONCE only
+  }, []);
 
   // Register service worker
   useEffect(() => {
@@ -157,39 +95,11 @@ function AppContent() {
 
   const displayData = searchQuery ? searchResults : newsData;
   
-  // Circuit breaker protection
-  if (!shouldRender) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-red-50">
-        <div className="text-center p-8">
-          <div className="text-4xl mb-4">🛑</div>
-          <h2 className="text-xl font-bold text-red-800 mb-2">Infinite Loop Protection Active</h2>
-          <p className="text-red-600 mb-4">The app has been temporarily disabled to prevent crashes.</p>
-          <p className="text-red-500 text-sm">This will automatically resolve in a few seconds.</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Reload Page
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // NUCLEAR: Remove circuit breaker completely
 
   return (
-    <AccessibilityProvider>
-      <SkipToContent />
-      <div className={cn(
-        "min-h-screen relative",
-        "bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100",
-        "dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900",
-        "text-slate-900 dark:text-slate-100",
-        isDarkMode && "dark"
-      )}
-      role="application"
-      aria-label="AI News Aggregator"
-      >
+    <div className="nuclear-mode min-h-screen relative bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900 text-slate-900 dark:text-slate-100">
+      {/* NUCLEAR: Disable AccessibilityProvider completely */}
         {/* Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl animate-pulse" />
@@ -221,63 +131,41 @@ function AppContent() {
               </div>
             
               <div className="flex items-center space-x-4">
-                {/* Development toggles */}
-                {process.env.NODE_ENV === 'development' && (
-                  <button
-                    onClick={() => setUseVirtualization(!useVirtualization)}
-                    className={cn(
-                      "group relative p-3 rounded-xl backdrop-blur-sm border border-white/10 transition-all duration-300 hover:scale-105",
-                      useVirtualization 
-                        ? "bg-green-500/20 hover:bg-green-500/30" 
-                        : "bg-white/10 hover:bg-white/20 dark:bg-slate-800/50 dark:hover:bg-slate-700/50"
-                    )}
-                    title={`Virtualization: ${useVirtualization ? 'ON' : 'OFF'}`}
-                  >
-                    <Zap className={cn(
-                      "w-5 h-5 transition-all duration-300",
-                      useVirtualization 
-                        ? "text-green-400" 
-                        : "text-slate-600 dark:text-slate-300"
-                    )} />
-                  </button>
-                )}
+                {/* NUCLEAR: Development toggles disabled */}
                 
                 <button
                   onClick={toggleDarkMode}
-                  className="group relative p-3 rounded-xl bg-white/10 hover:bg-white/20 dark:bg-slate-800/50 dark:hover:bg-slate-700/50 backdrop-blur-sm border border-white/10 transition-all duration-300 hover:scale-105"
+                  className="p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity" />
                   {isDarkMode ? 
-                    <Sun className="w-5 h-5 text-yellow-500 group-hover:rotate-180 transition-transform duration-500" /> : 
-                    <Moon className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:rotate-12 transition-transform duration-300" />
+                    <Sun className="w-5 h-5 text-yellow-500" /> : 
+                    <Moon className="w-5 h-5 text-slate-600" />
                   }
                 </button>
               
-                <ShimmerButton 
+                <button 
                   onClick={handleRefresh}
-                  className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105"
-                  shimmerColor="#ffffff"
-                  background="linear-gradient(45deg, #3b82f6, #8b5cf6)"
+                  className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all duration-300"
                 >
                   <RefreshCw className="w-4 h-4" />
                   <span>Refresh</span>
-                </ShimmerButton>
+                </button>
               
-                <InteractiveHoverButton
-                  onClick={() => setShowSettings(true)}
-                  className="flex items-center space-x-2 px-6 py-3 bg-white/10 hover:bg-white/20 dark:bg-slate-800/50 dark:hover:bg-slate-700/50 backdrop-blur-sm border border-white/10 transition-all duration-300 hover:scale-105"
+                <button
+                  className="flex items-center space-x-2 px-6 py-3 bg-gray-500 text-white rounded-xl cursor-not-allowed"
+                  disabled
                 >
                   <Settings className="w-4 h-4" />
-                  <span>Settings</span>
-                </InteractiveHoverButton>
+                  <span>Settings (Disabled)</span>
+                </button>
                 
-                <InteractiveHoverButton
+                <button
                   onClick={() => window.open('https://github.com', '_blank')}
-                  className="flex items-center space-x-2 px-6 py-3 bg-white/10 hover:bg-white/20 dark:bg-slate-800/50 dark:hover:bg-slate-700/50 backdrop-blur-sm border border-white/10 transition-all duration-300 hover:scale-105"
+                  className="flex items-center space-x-2 px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300"
                 >
                   <Github className="w-4 h-4" />
                   <span>GitHub</span>
-                </InteractiveHoverButton>
+                </button>
               </div>
             </div>
 
@@ -360,21 +248,16 @@ function AppContent() {
                     className="rounded-2xl overflow-hidden"
                   />
                 ) : (
-                  // Use regular grid for smaller datasets
+                  // NUCLEAR: Simple grid without complex features
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {displayData.map((article, index) => (
-                      <div 
-                        key={article.id} 
-                        className="animate-fade-in"
-                        style={{ animationDelay: `${Math.min(index * 50, 1000)}ms` }} // Cap animation delay
-                      >
-                        <AIEnhancedNewsCard 
-                          article={article} 
-                          priority={index < 6} 
-                          lazy={index >= 6}
-                          enableAISummary={enableAISummary}
-                        />
-                      </div>
+                      <AIEnhancedNewsCard 
+                        key={article.id}
+                        article={article} 
+                        priority={false}
+                        lazy={false}
+                        enableAISummary={false}
+                      />
                     ))}
                   </div>
                 )
@@ -393,14 +276,8 @@ function AppContent() {
             >
               {papersData && papersData.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {papersData.map((paper, index) => (
-                    <div 
-                      key={paper.id}
-                      className="animate-fade-in"
-                      style={{ animationDelay: `${index * 100}ms` }}
-                    >
-                      <ArxivCard paper={paper} />
-                    </div>
+                  {papersData.map((paper) => (
+                    <ArxivCard key={paper.id} paper={paper} />
                   ))}
                 </div>
               )}
@@ -417,32 +294,13 @@ function AppContent() {
         </footer>
       </div>
       
-      {/* Settings Panel */}
-      <SettingsPanel 
-        isOpen={showSettings} 
-        onClose={() => setShowSettings(false)} 
-      />
+      {/* NUCLEAR: Settings completely disabled */}
     </div>
-    </AccessibilityProvider>
   );
 }
 
 function App() {
-  const shouldRender = useCircuitBreaker('App');
-  
-  console.log('🎪 App component rendering...');
-  
-  if (!shouldRender) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold mb-2">App Temporarily Disabled</h1>
-          <p className="text-gray-600">Infinite loop protection is active.</p>
-        </div>
-      </div>
-    );
-  }
+  console.log('🎪 App component rendering in NUCLEAR MODE...');
   
   return (
     <QueryClientProvider client={queryClient}>
