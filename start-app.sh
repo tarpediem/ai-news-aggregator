@@ -1,50 +1,28 @@
 #!/bin/bash
 
-# AI News App Startup Script
-# This script starts both the frontend and backend servers
+echo "🚀 Starting AI News Hub..."
+echo "🔧 Checking dependencies..."
 
-echo "Starting AI News App..."
+# Install dependencies if needed
+if [ ! -d "node_modules" ]; then
+    echo "📦 Installing dependencies..."
+    npm install
+fi
 
-# Function to cleanup on exit
-cleanup() {
-    echo "Shutting down servers..."
-    kill $BACKEND_PID $FRONTEND_PID 2>/dev/null
-    exit
-}
+echo "🧹 Clearing any existing processes..."
+pkill -f "vite" 2>/dev/null || true
 
-# Set up trap to call cleanup on script exit
-trap cleanup EXIT INT TERM
-
-# Change to the app directory
-cd "$(dirname "$0")"
-
-# Start the scraper backend
-echo "Starting scraper backend on port 8001..."
-cd scraper-backend
-npm install
-node server.js &
-BACKEND_PID=$!
-cd ..
-
-# Wait for backend to start
-sleep 3
-
-# Start the frontend dev server
-echo "Starting frontend on port 5173..."
-npm install
-npm run dev &
-FRONTEND_PID=$!
-
-# Print startup information
+echo "🔥 Starting development server..."
+echo "📱 The app will be available at:"
+echo "   - http://localhost:3000"
+echo "   - http://127.0.0.1:3000"
 echo ""
-echo "========================================="
-echo "AI News App is running!"
-echo "========================================="
-echo "Frontend: http://localhost:5173"
-echo "Backend: http://localhost:8001"
+echo "🎯 If you can't connect:"
+echo "   1. Try refreshing your browser"
+echo "   2. Clear browser cache (Ctrl+Shift+R)"
+echo "   3. Try a different browser"
+echo "   4. Check if antivirus/firewall is blocking"
 echo ""
-echo "Press Ctrl+C to stop all servers"
-echo "========================================="
 
-# Keep script running
-wait
+# Start the server
+npx vite --host 0.0.0.0 --port 3000

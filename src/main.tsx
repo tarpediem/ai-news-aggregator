@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import './index.css'
-import App from './App.tsx'
+import App from './SimpleApp.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 import { serviceWorker } from './utils/serviceWorker.ts'
 
@@ -29,7 +29,7 @@ if (!rootElement) {
     console.log('🔧 Creating React root...');
     const root = createRoot(rootElement);
     
-    console.log('🎨 Rendering Full App with Error Boundary and infinite loop fixes...');
+    console.log('🎨 Rendering Full AI News Hub with Enhanced Features...');
     root.render(
       <StrictMode>
         <ErrorBoundary>
