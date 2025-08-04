@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
 import { Search, X, Sparkles, Zap } from 'lucide-react';
+import React, { useState, useEffect, memo, useCallback } from 'react';
+
 import { cn } from '../lib/utils';
 
 interface SearchBarProps {
@@ -8,7 +9,7 @@ interface SearchBarProps {
   className?: string;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({ 
+export const SearchBar: React.FC<SearchBarProps> = memo(({ 
   placeholder = "Search AI news and papers...", 
   onSearch, 
   className = '' 
@@ -17,7 +18,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
       setIsSearching(true);
@@ -25,12 +26,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       onSearch(query);
       setIsSearching(false);
     }
-  };
+  }, [query, onSearch]);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setQuery('');
     onSearch('');
-  };
+  }, [onSearch]);
 
   // Auto-search with debounce
   useEffect(() => {
@@ -137,4 +138,4 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       )}
     </form>
   );
-};
+});

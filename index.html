@@ -4,10 +4,104 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    
+    <!-- Primary Meta Tags -->
+    <title>AI News Aggregator - Latest AI & Technology News</title>
+    <meta name="title" content="AI News Aggregator - Latest AI & Technology News" />
+    <meta name="description" content="Stay updated with the latest AI and technology news from trusted sources. Real-time aggregation of articles, research papers, and industry insights." />
+    <meta name="keywords" content="AI, artificial intelligence, machine learning, technology news, research papers, tech trends" />
+    <meta name="author" content="AI News Aggregator" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ai-news-aggregator.vercel.app/" />
+    <meta property="og:title" content="AI News Aggregator - Latest AI & Technology News" />
+    <meta property="og:description" content="Stay updated with the latest AI and technology news from trusted sources." />
+    <meta property="og:image" content="/og-image.png" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://ai-news-aggregator.vercel.app/" />
+    <meta property="twitter:title" content="AI News Aggregator - Latest AI & Technology News" />
+    <meta property="twitter:description" content="Stay updated with the latest AI and technology news from trusted sources." />
+    <meta property="twitter:image" content="/twitter-image.png" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- PWA Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon-180x180.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icon-16x16.png" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="AI News" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- Performance hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link rel="dns-prefetch" href="https://api.allorigins.win" />
+    <link rel="dns-prefetch" href="https://export.arxiv.org" />
+    
+    <!-- Critical CSS (inline small amount) -->
+    <style>
+      /* Critical loading styles */
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        overflow-x: hidden;
+      }
+      
+      #root {
+        min-height: 100vh;
+      }
+      
+      /* Loading animation */
+      .app-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      }
+      
+      .app-loading .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #e2e8f0;
+        border-top: 4px solid #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Loading indicator while app loads -->
+      <div class="app-loading">
+        <div class="spinner"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Remove loading indicator once app loads -->
+    <script>
+      window.addEventListener('load', () => {
+        const loading = document.querySelector('.app-loading');
+        if (loading) {
+          loading.style.display = 'none';
+        }
+      });
+    </script>
   </body>
 </html>

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import type { NewsCategory } from '../types/news';
-import { cn } from '../lib/utils';
 import { Sparkles, Zap } from 'lucide-react';
+import React, { useState } from 'react';
+
+import { cn } from '../lib/utils';
+import type { NewsCategory } from '../types/news';
 
 interface CategoryFilterProps {
   selectedCategory: NewsCategory | null;

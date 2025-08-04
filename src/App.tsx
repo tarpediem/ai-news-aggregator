@@ -1,16 +1,21 @@
-import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Newspaper, Brain, RefreshCw, Github, Moon, Sun, Sparkles, Zap } from 'lucide-react';
-import { NewsCard } from './components/NewsCard';
+import { Newspaper, Brain, RefreshCw, Github, Moon, Sun, Sparkles, Zap, Settings } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
+import { AccessibilityProvider, SkipToContent } from './components/AccessibilityProvider';
+import { AIEnhancedNewsCard } from './components/AIEnhancedNewsCard';
 import { ArxivCard } from './components/ArxivCard';
-import { SearchBar } from './components/SearchBar';
 import { CategoryFilter } from './components/CategoryFilter';
+import { SearchBar } from './components/SearchBar';
+import SettingsPanel from './components/SettingsPanel';
+import { LoadingState } from './components/SkeletonLoader';
 import { TrendingTopics } from './components/TrendingTopics';
-import { ShimmerButton } from './components/ui/shimmer-button';
 import { InteractiveHoverButton } from './components/ui/interactive-hover-button';
+import { ShimmerButton } from './components/ui/shimmer-button';
+import { VirtualizedNewsList, useResponsiveGrid } from './components/VirtualizedNewsList';
 import { useNews, useArxivPapers, useSearchNews, useRefreshNews } from './hooks/useNews';
-import type { NewsCategory } from './types/news';
 import { cn } from './lib/utils';
+import type { NewsCategory } from './types/news';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,13 +26,34 @@ const queryClient = new QueryClient({
   },
 });
 
+// Temporarily disable store subscriptions to prevent infinite loops
+// TODO: Re-enable once we verify the main app works without loops
+// let subscriptionsInitialized = false;
+// if (!subscriptionsInitialized && typeof window !== 'undefined') {
+//   try {
+//     setupStoreSubscriptions();
+//     subscriptionsInitialized = true;
+//   } catch (error) {
+//     console.warn('Failed to setup store subscriptions:', error);
+//   }
+// }
+
 function AppContent() {
   const [activeTab, setActiveTab] = useState<'news' | 'papers'>('news');
   const [selectedCategory, setSelectedCategory] = useState<NewsCategory | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [useVirtualization, setUseVirtualization] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const [enableAISummary] = useState(true);
+  
+  // Responsive grid configuration
+  const { itemsPerRow, containerHeight } = useResponsiveGrid();
 
-  const { data: newsData, isLoading: newsLoading, error: newsError } = useNews(selectedCategory || undefined);
+  // Use news hooks
+  const { data: newsData, isLoading: newsLoading, error: newsError } = useNews(
+    selectedCategory || undefined
+  );
   const { data: papersData, isLoading: papersLoading, error: papersError } = useArxivPapers('artificial intelligence');
   const { data: searchResults, isLoading: searchLoading } = useSearchNews(searchQuery);
   const refreshNews = useRefreshNews();
@@ -45,21 +71,59 @@ function AppContent() {
   };
 
   const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle('dark');
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    document.documentElement.classList.toggle('dark', newDarkMode);
+    localStorage.setItem('darkMode', JSON.stringify(newDarkMode));
   };
+
+  // Initialize dark mode from localStorage
+  useEffect(() => {
+    const savedDarkMode = localStorage.getItem('darkMode');
+    if (savedDarkMode) {
+      try {
+        const isDark = JSON.parse(savedDarkMode);
+        if (isDark !== isDarkMode) { // Only update if different to prevent loops
+          setIsDarkMode(isDark);
+          document.documentElement.classList.toggle('dark', isDark);
+        }
+      } catch {
+        // Ignore parsing errors and set default
+        setIsDarkMode(false);
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, []); // Only run once on mount
+
+  // Register service worker
+  useEffect(() => {
+    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('SW registered: ', registration);
+        })
+        .catch((registrationError) => {
+          console.log('SW registration failed: ', registrationError);
+        });
+    }
+  }, []);
 
   const displayData = searchQuery ? searchResults : newsData;
 
   return (
-    <div className={cn(
-      "min-h-screen relative",
-      "bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100",
-      "dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900",
-      "text-slate-900 dark:text-slate-100",
-      isDarkMode && "dark"
-    )}>
-      {/* Animated Background */}
+    <AccessibilityProvider>
+      <SkipToContent />
+      <div className={cn(
+        "min-h-screen relative",
+        "bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100",
+        "dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900",
+        "text-slate-900 dark:text-slate-100",
+        isDarkMode && "dark"
+      )}
+      role="application"
+      aria-label="AI News Aggregator"
+      >
+        {/* Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-600/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}} />
@@ -90,6 +154,27 @@ function AppContent() {
               </div>
             
               <div className="flex items-center space-x-4">
+                {/* Development toggles */}
+                {process.env.NODE_ENV === 'development' && (
+                  <button
+                    onClick={() => setUseVirtualization(!useVirtualization)}
+                    className={cn(
+                      "group relative p-3 rounded-xl backdrop-blur-sm border border-white/10 transition-all duration-300 hover:scale-105",
+                      useVirtualization 
+                        ? "bg-green-500/20 hover:bg-green-500/30" 
+                        : "bg-white/10 hover:bg-white/20 dark:bg-slate-800/50 dark:hover:bg-slate-700/50"
+                    )}
+                    title={`Virtualization: ${useVirtualization ? 'ON' : 'OFF'}`}
+                  >
+                    <Zap className={cn(
+                      "w-5 h-5 transition-all duration-300",
+                      useVirtualization 
+                        ? "text-green-400" 
+                        : "text-slate-600 dark:text-slate-300"
+                    )} />
+                  </button>
+                )}
+                
                 <button
                   onClick={toggleDarkMode}
                   className="group relative p-3 rounded-xl bg-white/10 hover:bg-white/20 dark:bg-slate-800/50 dark:hover:bg-slate-700/50 backdrop-blur-sm border border-white/10 transition-all duration-300 hover:scale-105"
@@ -111,6 +196,14 @@ function AppContent() {
                   <span>Refresh</span>
                 </ShimmerButton>
               
+                <InteractiveHoverButton
+                  onClick={() => setShowSettings(true)}
+                  className="flex items-center space-x-2 px-6 py-3 bg-white/10 hover:bg-white/20 dark:bg-slate-800/50 dark:hover:bg-slate-700/50 backdrop-blur-sm border border-white/10 transition-all duration-300 hover:scale-105"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Settings</span>
+                </InteractiveHoverButton>
+                
                 <InteractiveHoverButton
                   onClick={() => window.open('https://github.com', '_blank')}
                   className="flex items-center space-x-2 px-6 py-3 bg-white/10 hover:bg-white/20 dark:bg-slate-800/50 dark:hover:bg-slate-700/50 backdrop-blur-sm border border-white/10 transition-all duration-300 hover:scale-105"
@@ -176,98 +269,99 @@ function AppContent() {
         </header>
 
         {/* Content */}
-        <main>
+        <main id="main-content" role="main" aria-label="News and research content">
           {activeTab === 'news' ? (
-            <div>
-              {newsLoading || searchLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="group">
-                      <div className="relative backdrop-blur-xl bg-white/20 dark:bg-slate-900/20 border border-white/20 dark:border-slate-700/20 rounded-2xl p-6 shadow-xl animate-pulse">
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="relative space-y-4">
-                          <div className="h-4 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 rounded-lg w-3/4" />
-                          <div className="h-4 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 rounded-lg w-1/2" />
-                          <div className="h-32 bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 rounded-xl" />
-                          <div className="space-y-2">
-                            <div className="h-3 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 rounded" />
-                            <div className="h-3 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 rounded w-2/3" />
-                          </div>
-                        </div>
+            <LoadingState
+              isLoading={newsLoading || searchLoading}
+              hasContent={!!(displayData && displayData.length > 0)}
+              error={newsError ? 'Error loading news. Please try again.' : null}
+              skeletonCount={6}
+              skeletonColumns={3}
+              skeletonType="news"
+              emptyMessage="No news articles found."
+              emptyIcon="📰"
+            >
+              {displayData && displayData.length > 0 && (
+                useVirtualization && displayData.length > 12 ? (
+                  // Use virtualized list for large datasets (>12 items)
+                  <VirtualizedNewsList
+                    articles={displayData}
+                    itemsPerRow={itemsPerRow}
+                    containerHeight={containerHeight}
+                    onArticleClick={(article) => window.open(article.url, '_blank', 'noopener,noreferrer')}
+                    showPerformanceMetrics={process.env.NODE_ENV === 'development'}
+                    className="rounded-2xl overflow-hidden"
+                  />
+                ) : (
+                  // Use regular grid for smaller datasets
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {displayData.map((article, index) => (
+                      <div 
+                        key={article.id} 
+                        className="animate-fade-in"
+                        style={{ animationDelay: `${Math.min(index * 50, 1000)}ms` }} // Cap animation delay
+                      >
+                        <AIEnhancedNewsCard 
+                          article={article} 
+                          priority={index < 6} 
+                          lazy={index >= 6}
+                          enableAISummary={enableAISummary}
+                        />
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : newsError ? (
-                <div className="text-center py-12">
-                  <p className="text-slate-500 dark:text-slate-400">Error loading news. Please try again.</p>
-                </div>
-              ) : displayData && displayData.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {displayData.map((article, index) => (
+                    ))}
+                  </div>
+                )
+              )}
+            </LoadingState>
+          ) : (
+            <LoadingState
+              isLoading={papersLoading}
+              hasContent={!!(papersData && papersData.length > 0)}
+              error={papersError ? 'Error loading papers. Please try again.' : null}
+              skeletonCount={4}
+              skeletonColumns={2}
+              skeletonType="arxiv"
+              emptyMessage="No research papers found."
+              emptyIcon="📚"
+            >
+              {papersData && papersData.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {papersData.map((paper, index) => (
                     <div 
-                      key={article.id} 
+                      key={paper.id}
                       className="animate-fade-in"
                       style={{ animationDelay: `${index * 100}ms` }}
                     >
-                      <NewsCard article={article} />
+                      <ArxivCard paper={paper} />
                     </div>
                   ))}
-                </div>
-              ) : (
-                <div className="text-center py-16">
-                  <div className="backdrop-blur-xl bg-white/10 dark:bg-slate-900/10 border border-white/20 dark:border-slate-700/20 rounded-2xl p-12 max-w-md mx-auto">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full flex items-center justify-center">
-                      <Newspaper className="w-8 h-8 text-white" />
-                    </div>
-                    <p className="text-slate-600 dark:text-slate-300 text-lg">No news articles found.</p>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">Try adjusting your search or category filters.</p>
-                  </div>
                 </div>
               )}
-            </div>
-          ) : (
-            <div>
-              {papersLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="bg-slate-100 dark:bg-slate-800 rounded-lg h-48"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : papersError ? (
-                <div className="text-center py-12">
-                  <p className="text-slate-500 dark:text-slate-400">Error loading papers. Please try again.</p>
-                </div>
-              ) : papersData && papersData.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {papersData.map((paper) => (
-                    <ArxivCard key={paper.id} paper={paper} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-slate-500 dark:text-slate-400">No research papers found.</p>
-                </div>
-              )}
-            </div>
+            </LoadingState>
           )}
         </main>
 
         {/* Footer */}
-        <footer className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-700">
+        <footer className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-700" role="contentinfo">
           <div className="text-center text-slate-500 dark:text-slate-400">
             <p>Built with React, TypeScript, and Magic UI</p>
-            <p className="mt-2">Aggregating AI news from various sources</p>
+            <p className="mt-2">Aggregating AI news with OpenRouter integration</p>
           </div>
         </footer>
       </div>
+      
+      {/* Settings Panel */}
+      <SettingsPanel 
+        isOpen={showSettings} 
+        onClose={() => setShowSettings(false)} 
+      />
     </div>
+    </AccessibilityProvider>
   );
 }
 
 function App() {
+  console.log('🎪 App component rendering...');
   return (
     <QueryClientProvider client={queryClient}>
       <AppContent />

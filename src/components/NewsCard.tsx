@@ -1,25 +1,57 @@
-import React, { useState } from 'react';
-import type { NewsArticle } from '../types/news';
-import { formatDate, truncateText, getSourceLogo } from '../lib/utils';
 import { ExternalLink, Clock, User, Tag, Sparkles, TrendingUp, Eye } from 'lucide-react';
+import React, { useState, memo, useMemo, useCallback } from 'react';
+
+import { formatDate, truncateText, getSourceLogo } from '../lib/utils';
+import type { NewsArticle } from '../types/news';
+
+import { LazyImage } from './LazyImage';
 
 interface NewsCardProps {
   article: NewsArticle;
   className?: string;
+  onClick?: (article: NewsArticle) => void;
+  priority?: boolean; // High priority for above-the-fold content
+  lazy?: boolean; // Lazy load images for performance
 }
 
-export const NewsCard: React.FC<NewsCardProps> = ({ article, className = '' }) => {
+export const NewsCard: React.FC<NewsCardProps> = memo(({ 
+  article, 
+  className = '', 
+  onClick,
+  priority = false,
+  lazy: _ = true 
+}) => {
   const [isHovered, setIsHovered] = useState(false);
   
-  const handleClick = () => {
-    window.open(article.url, '_blank', 'noopener,noreferrer');
-  };
+  const handleClick = useCallback(() => {
+    if (onClick) {
+      onClick(article);
+    } else {
+      window.open(article.url, '_blank', 'noopener,noreferrer');
+    }
+  }, [onClick, article]);
 
-  const relevanceColor = article.relevanceScore && article.relevanceScore > 0.8 
-    ? 'from-emerald-500 to-green-600' 
-    : article.relevanceScore && article.relevanceScore > 0.6 
-    ? 'from-blue-500 to-cyan-600' 
-    : 'from-slate-400 to-slate-500';
+  const relevanceColor = useMemo(() => {
+    if (!article.relevanceScore) return 'from-slate-400 to-slate-500';
+    if (article.relevanceScore > 0.8) return 'from-emerald-500 to-green-600';
+    if (article.relevanceScore > 0.6) return 'from-blue-500 to-cyan-600';
+    return 'from-slate-400 to-slate-500';
+  }, [article.relevanceScore]);
+
+  const formattedDate = useMemo(() => 
+    formatDate(article.publishedAt), 
+    [article.publishedAt]
+  );
+
+  const truncatedTitle = useMemo(() => 
+    truncateText(article.title, 80), 
+    [article.title]
+  );
+
+  const truncatedDescription = useMemo(() => 
+    truncateText(article.description, 150), 
+    [article.description]
+  );
 
   return (
     <div 
@@ -39,14 +71,16 @@ export const NewsCard: React.FC<NewsCardProps> = ({ article, className = '' }) =
         
         {/* Content */}
         <div className="relative z-10 p-6">
-          {/* Image Section */}
+          {/* Image Section with Lazy Loading */}
           {article.urlToImage && (
             <div className="relative mb-6 overflow-hidden rounded-xl group/image">
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <img 
+              <LazyImage
                 src={article.urlToImage} 
                 alt={article.title}
+                priority={priority}
                 className="w-full h-48 object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-110"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
               
               {/* Floating Read Button */}
@@ -83,18 +117,18 @@ export const NewsCard: React.FC<NewsCardProps> = ({ article, className = '' }) =
             
             <div className="flex items-center space-x-1 text-xs text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-800/50 px-2 py-1 rounded-lg">
               <Clock className="w-3 h-3" />
-              <span>{formatDate(article.publishedAt)}</span>
+              <span>{formattedDate}</span>
             </div>
           </div>
 
           {/* Title */}
           <h3 className="text-lg font-bold leading-tight text-slate-900 dark:text-slate-100 mb-3 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
-            {article.title}
+            {truncatedTitle}
           </h3>
 
           {/* Description */}
           <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4 line-clamp-3">
-            {truncateText(article.description, 150)}
+            {truncatedDescription}
           </p>
 
           {/* Tags */}
@@ -164,4 +198,4 @@ export const NewsCard: React.FC<NewsCardProps> = ({ article, className = '' }) =
       </div>
     </div>
   );
-};
+});

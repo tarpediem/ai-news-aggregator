@@ -10,4 +10,22 @@ export default defineConfig({
       "@": resolve(__dirname, "./src"),
     },
   },
+  server: {
+    port: 5173,
+    cors: true,
+    proxy: {
+      '/api/arxiv': {
+        target: 'http://export.arxiv.org',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/arxiv/, '/api/query'),
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            // Remove problematic headers
+            proxyReq.removeHeader('origin');
+            proxyReq.removeHeader('referer');
+          });
+        }
+      }
+    }
+  }
 })

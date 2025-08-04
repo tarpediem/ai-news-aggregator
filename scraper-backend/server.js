@@ -107,7 +107,7 @@ app.post('/scrape', rateLimit, async (req, res) => {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         },
-        timeout: 30000,
+        timeout: 5000, // Reduced from 30s to 5s for better performance
         maxRedirects: 5
       });
       

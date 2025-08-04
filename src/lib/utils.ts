@@ -22,11 +22,11 @@ export function formatDate(dateString: string): string {
 
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + "...";
+  return `${text.substring(0, maxLength)  }...`;
 }
 
 export function getSourceLogo(source: string): string {
-  const sourceLogos: { [key: string]: string } = {
+  const sourceLogos: Record<string, string> = {
     "arxiv": "🔬",
     "github": "💻",
     "techcrunch": "🚀",
@@ -34,5 +34,5 @@ export function getSourceLogo(source: string): string {
     "theverge": "🌐",
     "default": "📰"
   };
-  return sourceLogos[source.toLowerCase()] || sourceLogos.default;
+  return sourceLogos[source?.toLowerCase() || 'default'] || sourceLogos.default;
 }

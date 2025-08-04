@@ -1,183 +1,284 @@
 import axios from 'axios';
-import type { NewsArticle, ArxivPaper, NewsCategory } from '../types/news';
-import { fallbackScraper } from './fallbackScraper';
 
-// AI News Source Configuration
-const AI_NEWS_SOURCES = [
+import { 
+  REQUEST_LIMITS, 
+  CACHE_CONFIG, 
+  AI_KEYWORDS,
+  ENV_CONFIG
+} from '../config/constants';
+import type { NewsArticle, ArxivPaper, NewsCategory } from '../types/news';
+import { errorHandler, withRetry, withTimeout } from '../utils/errorHandler';
+import { throttledRequest, batchRequests } from '../utils/requestQueue';
+
+import { fallbackScraper } from './fallbackScraper';
+import { imageService } from './imageService';
+
+
+// AI News Source Configuration - Organized by category
+interface NewsSourceConfig {
+  name: string;
+  url: string;
+  category: NewsCategory;
+  selector: string;
+  titleSelector: string;
+  descriptionSelector: string;
+  linkSelector: string;
+  imageSelector: string;
+  sourceId: string;
+  priority?: number;
+}
+
+const AI_NEWS_SOURCES: NewsSourceConfig[] = [
+  // High-priority AI research sources
   {
     name: 'OpenAI Blog',
     url: 'https://openai.com/blog',
-    category: 'artificial-intelligence' as NewsCategory,
+    category: 'artificial-intelligence',
     selector: 'article, .post-item, .blog-post',
     titleSelector: 'h1, h2, h3, .title, .post-title',
     descriptionSelector: '.excerpt, .summary, p',
     linkSelector: 'a[href]',
     imageSelector: 'img',
-    sourceId: 'openai'
+    sourceId: 'openai',
+    priority: 0
   },
   {
     name: 'Google AI Blog',
     url: 'https://ai.googleblog.com/',
-    category: 'artificial-intelligence' as NewsCategory,
+    category: 'artificial-intelligence',
     selector: '.post, article',
     titleSelector: '.post-title a, h1, h2',
     descriptionSelector: '.post-body, .summary',
     linkSelector: 'a[href]',
     imageSelector: 'img',
-    sourceId: 'google-ai'
+    sourceId: 'google-ai',
+    priority: 0
   },
   {
     name: 'Anthropic News',
     url: 'https://www.anthropic.com/news',
-    category: 'artificial-intelligence' as NewsCategory,
+    category: 'artificial-intelligence',
     selector: '.news-item, article, .post',
     titleSelector: 'h1, h2, h3, .title',
     descriptionSelector: '.excerpt, .summary, p',
     linkSelector: 'a[href]',
     imageSelector: 'img',
-    sourceId: 'anthropic'
+    sourceId: 'anthropic',
+    priority: 0
   },
+  // Tech news sources
   {
     name: 'MIT Technology Review AI',
     url: 'https://www.technologyreview.com/topic/artificial-intelligence/',
-    category: 'tech-news' as NewsCategory,
+    category: 'tech-news',
     selector: '.story, article',
     titleSelector: '.story__title a, h1, h2',
     descriptionSelector: '.story__excerpt, .summary',
     linkSelector: 'a[href]',
     imageSelector: 'img',
-    sourceId: 'mit-tech-review'
+    sourceId: 'mit-tech-review',
+    priority: 1
   },
   {
     name: 'The Verge AI',
     url: 'https://www.theverge.com/ai-artificial-intelligence',
-    category: 'tech-news' as NewsCategory,
+    category: 'tech-news',
     selector: '.c-entry-box, article',
     titleSelector: '.c-entry-box--compact__title a, h1, h2',
     descriptionSelector: '.c-entry-summary, .summary',
     linkSelector: 'a[href]',
     imageSelector: 'img',
-    sourceId: 'the-verge'
+    sourceId: 'the-verge',
+    priority: 1
   },
+  // Industry sources
   {
     name: 'VentureBeat AI',
     url: 'https://venturebeat.com/ai/',
-    category: 'industry' as NewsCategory,
+    category: 'industry',
     selector: '.ArticleListing, article',
     titleSelector: '.ArticleListing__title a, h1, h2',
     descriptionSelector: '.ArticleListing__excerpt, .summary',
     linkSelector: 'a[href]',
     imageSelector: 'img',
-    sourceId: 'venturebeat'
+    sourceId: 'venturebeat',
+    priority: 1
   },
   {
     name: 'AI News',
     url: 'https://artificialintelligence-news.com/',
-    category: 'artificial-intelligence' as NewsCategory,
+    category: 'artificial-intelligence',
     selector: '.post, article',
     titleSelector: '.post-title a, h1, h2',
     descriptionSelector: '.post-excerpt, .summary',
     linkSelector: 'a[href]',
     imageSelector: 'img',
-    sourceId: 'ai-news'
+    sourceId: 'ai-news',
+    priority: 2
   },
+  // Machine learning sources
   {
     name: 'Towards Data Science',
     url: 'https://towardsdatascience.com/tagged/artificial-intelligence',
-    category: 'machine-learning' as NewsCategory,
+    category: 'machine-learning',
     selector: '.streamItem, article',
     titleSelector: 'h1, h2, h3, .graf--title',
     descriptionSelector: '.graf--p, .summary',
     linkSelector: 'a[href]',
     imageSelector: 'img',
-    sourceId: 'towards-data-science'
+    sourceId: 'towards-data-science',
+    priority: 2
   }
 ];
 
 class NewsService {
-  private scraperEndpoint: string;
-  private cache: Map<string, { data: NewsArticle[], timestamp: number }> = new Map();
-  private cacheTimeout = 15 * 60 * 1000; // 15 minutes
+  private readonly scraperEndpoint: string;
+  private readonly cache = new Map<string, { data: NewsArticle[], timestamp: number }>();
+  private readonly cacheTimeout = CACHE_CONFIG.NEWS_TIMEOUT;
 
   constructor() {
-    // Using a backend scraper service (you'll need to set this up)
-    this.scraperEndpoint = import.meta.env.VITE_SCRAPER_ENDPOINT || 'http://localhost:8001/scrape';
+    this.scraperEndpoint = ENV_CONFIG.SCRAPER_ENDPOINT;
   }
 
-  private async scrapeNewsSource(source: typeof AI_NEWS_SOURCES[0]): Promise<NewsArticle[]> {
-    try {
-      const response = await axios.post(this.scraperEndpoint, {
-        url: source.url,
-        selectors: {
-          container: source.selector,
-          title: source.titleSelector,
-          description: source.descriptionSelector,
-          link: source.linkSelector,
-          image: source.imageSelector
-        }
-      });
+  private async scrapeNewsSource(source: NewsSourceConfig): Promise<NewsArticle[]> {
+    const scrapeOperation = async (): Promise<NewsArticle[]> => {
+      const response = await withTimeout(
+        () => axios.post(this.scraperEndpoint, {
+          url: source.url,
+          selectors: {
+            container: source.selector,
+            title: source.titleSelector,
+            description: source.descriptionSelector,
+            link: source.linkSelector,
+            image: source.imageSelector
+          }
+        }),
+        5000 // Reduced from 10s to 5s timeout
+      );
 
       const scrapedData = response.data.results || [];
       
-      return scrapedData.map((item: any, index: number) => ({
-        id: `${source.sourceId}-${Date.now()}-${index}`,
-        title: item.title || 'No Title',
-        description: item.description || 'No description available',
-        url: item.link?.startsWith('http') ? item.link : `${new URL(source.url).origin}${item.link}`,
-        urlToImage: item.image?.startsWith('http') ? item.image : 
-                   item.image ? `${new URL(source.url).origin}${item.image}` : 
-                   `https://via.placeholder.com/400x200?text=${encodeURIComponent(source.name)}`,
-        publishedAt: new Date().toISOString(),
-        source: {
-          id: source.sourceId,
-          name: source.name,
-          category: source.category
-        },
-        author: source.name,
-        category: source.category,
-        tags: this.extractTags(item.title + ' ' + item.description),
-        relevanceScore: this.calculateRelevanceScore(item.title + ' ' + item.description)
-      })).filter((article: NewsArticle) => article.title !== 'No Title' && article.title.length > 10);
+      return scrapedData
+        .slice(0, REQUEST_LIMITS.MAX_ARTICLES_PER_SOURCE)
+        .map((item: any, index: number) => this.transformScrapedItem(item, source, index))
+        .filter((article: NewsArticle) => this.isValidArticle(article));
+    };
 
+    try {
+      return await throttledRequest(
+        scrapeOperation,
+        source.priority || 1,
+        { sourceName: source.name, sourceId: source.sourceId }
+      );
     } catch (error) {
-      console.error(`Error scraping ${source.name}:`, error);
+      errorHandler.logError(error as Error, {
+        sourceName: source.name,
+        sourceUrl: source.url,
+        operation: 'scrapeNewsSource'
+      });
       return [];
     }
   }
 
+  private transformScrapedItem(item: any, source: NewsSourceConfig, index: number): NewsArticle {
+    const content = `${item.title || ''} ${item.description || ''}`;
+    
+    return {
+      id: `${source.sourceId}-${Date.now()}-${index}`,
+      title: item.title || 'No Title',
+      description: item.description || 'No description available',
+      url: this.resolveUrl(item.link, source.url),
+      urlToImage: this.resolveImageUrl(item.image, source),
+      publishedAt: new Date().toISOString(),
+      source: {
+        id: source.sourceId,
+        name: source.name,
+        category: source.category
+      },
+      author: source.name,
+      category: source.category,
+      tags: this.extractTags(content),
+      relevanceScore: this.calculateRelevanceScore(content)
+    };
+  }
+
+  private resolveUrl(link: string, baseUrl: string): string {
+    if (!link) return baseUrl;
+    if (link.startsWith('http')) return link;
+    
+    try {
+      return new URL(link, new URL(baseUrl).origin).toString();
+    } catch {
+      return baseUrl;
+    }
+  }
+
+  private resolveImageUrl(image: string, source: NewsSourceConfig): string {
+    if (!image) {
+      return imageService.getImageForCategory(source.category);
+    }
+    
+    if (image.startsWith('http')) {
+      return imageService.optimizeImageUrl(image);
+    }
+    
+    const resolvedImage = imageService.resolveImageUrl(image, source.url);
+    return imageService.optimizeImageUrl(resolvedImage);
+  }
+
+  private isValidArticle(article: NewsArticle): boolean {
+    return article.title !== 'No Title' && 
+           article.title.length > 10 &&
+           article.description.length > 20;
+  }
+
   private extractTags(content: string): string[] {
-    const aiKeywords = [
-      'ai', 'artificial intelligence', 'machine learning', 'deep learning', 'neural network',
-      'gpt', 'llm', 'large language model', 'transformer', 'chatbot', 'openai', 'google',
-      'anthropic', 'meta', 'microsoft', 'nvidia', 'computer vision', 'nlp', 'robotics',
-      'automation', 'algorithm', 'data science', 'python', 'tensorflow', 'pytorch'
+    const allKeywords = [
+      ...AI_KEYWORDS.PRIMARY,
+      ...AI_KEYWORDS.COMPANIES,
+      ...AI_KEYWORDS.TECHNOLOGIES,
+      ...AI_KEYWORDS.DOMAINS
     ];
     
     const lowerContent = content.toLowerCase();
-    return aiKeywords.filter(keyword => lowerContent.includes(keyword))
-                    .slice(0, 5); // Limit to 5 most relevant tags
+    return allKeywords
+      .filter(keyword => lowerContent.includes(keyword))
+      .slice(0, REQUEST_LIMITS.MAX_TAGS_PER_ARTICLE);
   }
 
   private calculateRelevanceScore(content: string): number {
-    const highValueKeywords = ['breakthrough', 'new', 'launches', 'releases', 'announces', 'revolutionary'];
     const lowerContent = content.toLowerCase();
-    
     let score = 0.5; // Base score
     
-    highValueKeywords.forEach(keyword => {
+    // High-value keywords boost
+    AI_KEYWORDS.HIGH_VALUE.forEach(keyword => {
       if (lowerContent.includes(keyword)) {
         score += 0.1;
       }
     });
     
-    // Bonus for AI-specific terms
-    if (lowerContent.includes('gpt') || lowerContent.includes('llm')) score += 0.2;
-    if (lowerContent.includes('openai') || lowerContent.includes('anthropic')) score += 0.15;
+    // AI-specific terms bonus
+    if (lowerContent.includes('gpt') || lowerContent.includes('llm')) {
+      score += 0.2;
+    }
+    
+    // Major AI companies bonus
+    AI_KEYWORDS.COMPANIES.forEach(company => {
+      if (lowerContent.includes(company.toLowerCase())) {
+        score += 0.15;
+      }
+    });
+    
+    // Technical depth bonus
+    const technicalTerms = AI_KEYWORDS.TECHNOLOGIES.filter(term => 
+      lowerContent.includes(term.toLowerCase())
+    ).length;
+    score += Math.min(technicalTerms * 0.05, 0.3);
     
     return Math.min(score, 1.0);
   }
 
-  async fetchNews(category?: NewsCategory): Promise<NewsArticle[]> {
+  async fetchNews(category?: NewsCategory, options: { progressive?: boolean } = {}): Promise<NewsArticle[]> {
     const cacheKey = `news-${category || 'all'}`;
     const cached = this.cache.get(cacheKey);
     
@@ -185,18 +286,32 @@ class NewsService {
       return cached.data;
     }
 
-    try {
-      const sourcesToScrape = category 
-        ? AI_NEWS_SOURCES.filter(source => source.category === category)
-        : AI_NEWS_SOURCES;
+    // Use progressive loading for better performance
+    if (options.progressive) {
+      return this.fetchNewsProgressively(category);
+    }
 
-      const scrapePromises = sourcesToScrape.map(source => this.scrapeNewsSource(source));
-      const results = await Promise.all(scrapePromises);
+    try {
+      const sourcesToScrape = this.getSourcesForCategory(category);
       
-      const allArticles = results.flat();
-      const sortedArticles = allArticles.sort((a, b) => 
-        new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+      // Use batch processing for better performance and error handling
+      const articles = await batchRequests(
+        sourcesToScrape,
+        async (sources: NewsSourceConfig[]) => {
+          const scrapePromises = sources.map(source => this.scrapeNewsSource(source));
+          const results = await Promise.allSettled(scrapePromises);
+          
+          return results
+            .filter((result): result is PromiseFulfilledResult<NewsArticle[]> => 
+              result.status === 'fulfilled'
+            )
+            .flatMap(result => result.value);
+        },
+        { batchSize: 2, keyExtractor: (source) => source.category } // Reduced batch size
       );
+
+      const allArticles = articles.flat();
+      const sortedArticles = this.sortAndLimitArticles(allArticles);
 
       // Cache the results
       this.cache.set(cacheKey, {
@@ -207,65 +322,143 @@ class NewsService {
       return sortedArticles;
 
     } catch (error) {
-      console.error('Error fetching news:', error);
-      console.log('Falling back to alternative scraping methods...');
+      errorHandler.logError(error as Error, { 
+        operation: 'fetchNews', 
+        category,
+        sourcesCount: AI_NEWS_SOURCES.length 
+      });
       
       // Try fallback scraping methods
-      try {
-        const fallbackArticles = await this.getFallbackNews(category);
-        return fallbackArticles;
-      } catch (fallbackError) {
-        console.error('Fallback scraping also failed:', fallbackError);
-        return this.getMinimalFallbackNews(category);
-      }
+      return this.getFallbackNewsWithRetry(category);
     }
   }
 
-  private async getFallbackNews(category?: NewsCategory): Promise<NewsArticle[]> {
+  private getSourcesForCategory(category?: NewsCategory): NewsSourceConfig[] {
+    const sources = category 
+      ? AI_NEWS_SOURCES.filter(source => source.category === category)
+      : AI_NEWS_SOURCES;
+    
+    // Sort by priority (lower numbers = higher priority)
+    return sources.sort((a, b) => (a.priority || 1) - (b.priority || 1));
+  }
+
+  private sortAndLimitArticles(articles: NewsArticle[]): NewsArticle[] {
+    return articles
+      .sort((a, b) => {
+        // Primary sort: relevance score
+        const scoreA = a.relevanceScore || 0;
+        const scoreB = b.relevanceScore || 0;
+        if (scoreA !== scoreB) return scoreB - scoreA;
+        
+        // Secondary sort: publish date
+        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+      })
+      .slice(0, REQUEST_LIMITS.MAX_SEARCH_RESULTS);
+  }
+
+  private async getFallbackNewsWithRetry(category?: NewsCategory): Promise<NewsArticle[]> {
     console.log('Using fallback scraping methods...');
     
-    // Try multiple fallback methods
-    const fallbackPromises = [
-      fallbackScraper.fetchFromRSS(),
-      fallbackScraper.fetchFromNewsAPI(),
-      fallbackScraper.fetchHackerNews()
-    ];
+    try {
+      const fallbackArticles = await withRetry(async () => {
+        const fallbackPromises = [
+          fallbackScraper.fetchFromRSS(),
+          fallbackScraper.fetchFromNewsAPI(),
+          fallbackScraper.fetchHackerNews()
+        ];
 
-    const results = await Promise.allSettled(fallbackPromises);
+        const results = await Promise.allSettled(fallbackPromises);
+        const allArticles: NewsArticle[] = [];
+
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            allArticles.push(...result.value);
+          } else {
+            errorHandler.logError(result.reason, { 
+              fallbackMethod: index,
+              operation: 'getFallbackNews' 
+            });
+          }
+        });
+
+        if (allArticles.length === 0) {
+          throw new Error('All fallback methods failed');
+        }
+
+        // Filter by category if specified
+        const filteredArticles = category 
+          ? allArticles.filter(article => article.category === category)
+          : allArticles;
+
+        return this.sortAndLimitArticles(filteredArticles);
+      });
+      
+      return fallbackArticles;
+    } catch (error) {
+      errorHandler.logError(error as Error, { 
+        operation: 'getFallbackNewsWithRetry',
+        category 
+      });
+      return this.getMinimalFallbackNews(category);
+    }
+  }
+
+  // Progressive loading implementation
+  private async fetchNewsProgressively(category?: NewsCategory): Promise<NewsArticle[]> {
+    const sourcesToScrape = this.getSourcesForCategory(category);
     const allArticles: NewsArticle[] = [];
-
-    results.forEach((result, index) => {
-      if (result.status === 'fulfilled') {
-        allArticles.push(...result.value);
-      } else {
-        console.error(`Fallback method ${index} failed:`, result.reason);
+    const cacheKey = `news-${category || 'all'}`;
+    
+    // Process sources in priority order with immediate yielding
+    for (const source of sourcesToScrape) {
+      try {
+        const articles = await this.scrapeNewsSource(source);
+        if (articles.length > 0) {
+          allArticles.push(...articles);
+          
+          // Cache intermediate results for immediate display
+          const intermediateResults = this.sortAndLimitArticles(allArticles);
+          this.cache.set(`${cacheKey}-partial`, {
+            data: intermediateResults,
+            timestamp: Date.now()
+          });
+          
+          // Small delay to prevent overwhelming the UI
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      } catch (error) {
+        console.warn(`Failed to scrape ${source.name}:`, error);
+        // Continue with other sources
       }
+    }
+    
+    const sortedArticles = this.sortAndLimitArticles(allArticles);
+    
+    // Cache final results
+    this.cache.set(cacheKey, {
+      data: sortedArticles,
+      timestamp: Date.now()
     });
+    
+    return sortedArticles;
+  }
 
-    // Filter by category if specified
-    const filteredArticles = category 
-      ? allArticles.filter(article => article.category === category)
-      : allArticles;
-
-    // Sort by relevance score and publish date
-    const sortedArticles = filteredArticles.sort((a, b) => {
-      const scoreA = a.relevanceScore || 0;
-      const scoreB = b.relevanceScore || 0;
-      if (scoreA !== scoreB) return scoreB - scoreA;
-      return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
-    });
-
-    return sortedArticles.slice(0, 50); // Limit to 50 articles
+  // Get partial results while loading
+  getPartialResults(category?: NewsCategory): NewsArticle[] {
+    const cacheKey = `news-${category || 'all'}-partial`;
+    const cached = this.cache.get(cacheKey);
+    return cached?.data || [];
   }
 
   private getMinimalFallbackNews(category?: NewsCategory): NewsArticle[] {
-    const fallbackArticles = [
+    const targetCategory = category || 'tech-news';
+    return [
       {
         id: 'fallback-1',
         title: 'AI News Service Temporarily Unavailable',
         description: 'The news scraping service is currently unavailable. Please try again later. You can also check major AI news sources directly.',
         url: '#',
-        urlToImage: 'https://via.placeholder.com/400x200?text=News+Unavailable',
+        urlToImage: imageService.getImageForCategory(targetCategory, true),
         publishedAt: new Date().toISOString(),
         source: {
           id: 'system',
@@ -273,18 +466,16 @@ class NewsService {
           category: 'Tech News'
         },
         author: 'System',
-        category: (category || 'tech-news') as NewsCategory,
+        category: targetCategory,
         tags: ['system', 'unavailable'],
         relevanceScore: 0.1
       }
     ];
-
-    return fallbackArticles;
   }
 
-  async fetchArxivPapers(query: string = 'artificial intelligence'): Promise<ArxivPaper[]> {
+  async fetchArxivPapers(query = 'artificial intelligence'): Promise<ArxivPaper[]> {
     try {
-      const response = await axios.get('http://export.arxiv.org/api/query', {
+      const response = await axios.get('/api/arxiv', {
         params: {
           search_query: `all:${query}`,
           start: 0,
@@ -325,7 +516,7 @@ class NewsService {
           pdfUrl: `https://arxiv.org/pdf/${id}.pdf`,
           categories,
           primaryCategory: categories[0] || '',
-          tags: this.extractTags(title + ' ' + summary)
+          tags: this.extractTags(`${title  } ${  summary}`)
         };
       });
 
@@ -378,6 +569,7 @@ class NewsService {
       ];
     }
   }
+
 }
 
 export const newsService = new NewsService();

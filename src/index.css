@@ -1,3 +1,5 @@
+@import './styles/accessibility.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -24,6 +26,13 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
+    
+    /* Magic UI Rainbow Button Variables */
+    --color-1: rgb(74, 222, 128);
+    --color-2: rgb(249, 115, 22);
+    --color-3: rgb(162, 28, 175);
+    --color-4: rgb(239, 68, 68);
+    --color-5: rgb(34, 197, 94);
   }
 
   .dark {
@@ -60,5 +69,95 @@
   .dark body {
     background-color: #0f172a;
     color: #f1f5f9;
+  }
+}
+
+@layer components {
+  /* Performance optimized animations */
+  @keyframes shimmer {
+    0% { 
+      background-position: -200% 0; 
+    }
+    100% { 
+      background-position: 200% 0; 
+    }
+  }
+  
+  @keyframes fadeIn {
+    from { 
+      opacity: 0; 
+      transform: translateY(10px); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+  }
+  
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 1.5s ease-in-out infinite;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    background-size: 200% 100%;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+  
+  .animate-slideInUp {
+    animation: slideInUp 0.5s ease-out forwards;
+  }
+  
+  /* Virtual scroll optimizations */
+  .virtual-scroll-container {
+    contain: layout style paint;
+    will-change: scroll-position;
+  }
+  
+  .virtual-scroll-item {
+    contain: layout style;
+  }
+  
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-shimmer,
+    .animate-fade-in,
+    .animate-slideInUp {
+      animation: none;
+    }
+    
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  
+  /* High contrast support */
+  @media (prefers-contrast: high) {
+    .animate-shimmer {
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 0, 0, 0.3),
+        transparent
+      );
+    }
   }
 }

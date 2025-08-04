@@ -34,6 +34,10 @@ export default {
           "0%": { transform: "scale(0)", opacity: "0.5" },
           "100%": { transform: "scale(4)", opacity: "0" },
         },
+        rainbow: {
+          "0%": { "background-position": "0%" },
+          "100%": { "background-position": "200%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -41,6 +45,7 @@ export default {
         "shimmer-slide": "shimmer-slide var(--speed) ease-in-out infinite alternate",
         "spin-around": "spin-around calc(var(--speed) * 2) infinite linear",
         rippling: "rippling var(--duration) ease-out",
+        rainbow: "rainbow var(--speed, 2s) ease-in-out infinite",
       },
     },
   },

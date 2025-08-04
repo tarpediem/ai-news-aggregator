@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import type { ArxivPaper } from '../types/news';
-import { formatDate, truncateText, cn } from '../lib/utils';
 import { ExternalLink, Clock, Users, FileText, Download, Sparkles, BookOpen, Star, Zap } from 'lucide-react';
+import React, { useState } from 'react';
+
+import { formatDate, truncateText, cn } from '../lib/utils';
+import type { ArxivPaper } from '../types/news';
 
 interface ArxivCardProps {
   paper: ArxivPaper;

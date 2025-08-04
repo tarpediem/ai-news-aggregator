@@ -1,0 +1,874 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="98" failures="53" errors="0" time="82.532">
+    <testsuite name="src/tests/integration/scraping-workflow.test.ts" timestamp="2025-08-04T06:22:04.263Z" hostname="tarpediem-hx99g" tests="16" failures="15" errors="0" skipped="0" time="21.746">
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; RSS Scraping Workflow &gt; should scrape RSS feed successfully" time="0.109">
+            <failure message="expected [] to have a length of 1 but got +0" type="AssertionError">
+AssertionError: expected [] to have a length of 1 but got +0
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ src/tests/integration/scraping-workflow.test.ts:46:24
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; RSS Scraping Workflow &gt; should handle RSS feed errors gracefully" time="0.106">
+            <system-err>
+Error: {
+  timestamp: &apos;2025-08-04T06:20:42.958Z&apos;,
+  error: {
+    name: &apos;Error&apos;,
+    message: &apos;Failed to parse RSS feed https://example.com/rss.xml: Network error&apos;,
+    stack: &apos;Error: Failed to parse RSS feed https://example.com/rss.xml: Network error\n&apos; +
+      &apos;    at RSSScraper.parseFeed (/home/tarpediem/AI-news/ai-news-app/src/strategies/RSScraper.ts:54:13)\n&apos; +
+      &apos;    at RSSScraper.performScrape (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:399:30)\n&apos; +
+      &apos;    at ErrorHandler.withRetry (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:174:16)\n&apos; +
+      &apos;    at RequestQueue.executeRequest (/home/tarpediem/AI-news/ai-news-app/src/utils/requestQueue.ts:259:22)&apos;
+  },
+  context: {
+    scraperId: &apos;test-scraper&apos;,
+    feedUrl: &apos;https://example.com/rss.xml&apos;,
+    operation: &apos;parseFeed&apos;
+  }
+}
+
+            </system-err>
+            <failure message="promise resolved &quot;[]&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;[]&quot; instead of rejecting
+
+- Expected: 
+[Error: rejected promise]
+
++ Received: 
+Array []
+
+ ❯ src/tests/integration/scraping-workflow.test.ts:64:36
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; RSS Scraping Workflow &gt; should parse multiple RSS feeds" time="0.102">
+            <failure message="expected [] to have a length of 2 but got +0" type="AssertionError">
+AssertionError: expected [] to have a length of 2 but got +0
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ src/tests/integration/scraping-workflow.test.ts:86:24
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; API Scraping Workflow &gt; should scrape NewsAPI successfully" time="0.001">
+            <failure message="mockedAxios.mockResolvedValue is not a function" type="TypeError">
+TypeError: mockedAxios.mockResolvedValue is not a function
+ ❯ src/tests/integration/scraping-workflow.test.ts:93:19
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; API Scraping Workflow &gt; should handle API rate limiting" time="0">
+            <failure message="mockedAxios.mockRejectedValue is not a function" type="TypeError">
+TypeError: mockedAxios.mockRejectedValue is not a function
+ ❯ src/tests/integration/scraping-workflow.test.ts:114:19
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; API Scraping Workflow &gt; should handle invalid API key" time="0">
+            <failure message="mockedAxios.mockRejectedValue is not a function" type="TypeError">
+TypeError: mockedAxios.mockRejectedValue is not a function
+ ❯ src/tests/integration/scraping-workflow.test.ts:132:19
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; Web Scraping Workflow &gt; should scrape web page successfully" time="0.102">
+            <failure message="expected [] to have a length of 1 but got +0" type="AssertionError">
+AssertionError: expected [] to have a length of 1 but got +0
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ src/tests/integration/scraping-workflow.test.ts:190:24
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; Web Scraping Workflow &gt; should handle missing selectors gracefully" time="0.101">
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; Multi-Scraper Workflow &gt; should orchestrate multiple scrapers" time="0.405">
+            <system-err>
+NewsAPI query failed for &quot;artificial intelligence OR AI OR machine learning&quot;: TypeError: __vite_ssr_import_0__.default is not a function
+    at NewsAPIScraper.apiRequest (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:490:28)
+    at NewsAPIScraper.performScrape (/home/tarpediem/AI-news/ai-news-app/src/strategies/APIScraper.ts:44:37)
+    at /home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:69:22
+    at ErrorHandler.withTimeout (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:216:26)
+    at __vite_ssr_import_4__.throttledRequest.scraperId (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:68:15)
+    at ErrorHandler.withRetry (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:174:22)
+    at RequestQueue.executeRequest (/home/tarpediem/AI-news/ai-news-app/src/utils/requestQueue.ts:259:28)
+NewsAPI query failed for &quot;deep learning OR neural networks OR GPT&quot;: TypeError: __vite_ssr_import_0__.default is not a function
+    at NewsAPIScraper.apiRequest (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:490:28)
+    at NewsAPIScraper.performScrape (/home/tarpediem/AI-news/ai-news-app/src/strategies/APIScraper.ts:44:37)
+NewsAPI query failed for &quot;OpenAI OR ChatGPT OR Anthropic OR Claude&quot;: TypeError: __vite_ssr_import_0__.default is not a function
+    at NewsAPIScraper.apiRequest (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:490:28)
+    at NewsAPIScraper.performScrape (/home/tarpediem/AI-news/ai-news-app/src/strategies/APIScraper.ts:44:37)
+    at ErrorHandler.withRetry (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:174:16)
+    at RequestQueue.executeRequest (/home/tarpediem/AI-news/ai-news-app/src/utils/requestQueue.ts:259:22)
+NewsAPI query failed for &quot;computer vision OR NLP OR natural language processing&quot;: TypeError: __vite_ssr_import_0__.default is not a function
+    at NewsAPIScraper.apiRequest (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:490:28)
+    at NewsAPIScraper.performScrape (/home/tarpediem/AI-news/ai-news-app/src/strategies/APIScraper.ts:44:37)
+    at ErrorHandler.withRetry (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:174:16)
+    at RequestQueue.executeRequest (/home/tarpediem/AI-news/ai-news-app/src/utils/requestQueue.ts:259:22)
+
+            </system-err>
+            <failure message="expected [] to have a length of 2 but got +0" type="AssertionError">
+AssertionError: expected [] to have a length of 2 but got +0
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ src/tests/integration/scraping-workflow.test.ts:256:31
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; Multi-Scraper Workflow &gt; should handle mixed success and failure scenarios" time="0.403">
+            <system-err>
+NewsAPI query failed for &quot;artificial intelligence OR AI OR machine learning&quot;: TypeError: __vite_ssr_import_0__.default is not a function
+    at NewsAPIScraper.apiRequest (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:490:28)
+    at NewsAPIScraper.performScrape (/home/tarpediem/AI-news/ai-news-app/src/strategies/APIScraper.ts:44:37)
+    at /home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:69:22
+    at ErrorHandler.withTimeout (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:216:26)
+    at __vite_ssr_import_4__.throttledRequest.scraperId (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:68:15)
+    at ErrorHandler.withRetry (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:174:22)
+    at RequestQueue.executeRequest (/home/tarpediem/AI-news/ai-news-app/src/utils/requestQueue.ts:259:28)
+NewsAPI query failed for &quot;deep learning OR neural networks OR GPT&quot;: TypeError: __vite_ssr_import_0__.default is not a function
+    at NewsAPIScraper.apiRequest (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:490:28)
+    at NewsAPIScraper.performScrape (/home/tarpediem/AI-news/ai-news-app/src/strategies/APIScraper.ts:44:37)
+NewsAPI query failed for &quot;OpenAI OR ChatGPT OR Anthropic OR Claude&quot;: TypeError: __vite_ssr_import_0__.default is not a function
+    at NewsAPIScraper.apiRequest (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:490:28)
+    at NewsAPIScraper.performScrape (/home/tarpediem/AI-news/ai-news-app/src/strategies/APIScraper.ts:44:37)
+    at ErrorHandler.withRetry (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:174:16)
+    at RequestQueue.executeRequest (/home/tarpediem/AI-news/ai-news-app/src/utils/requestQueue.ts:259:22)
+NewsAPI query failed for &quot;computer vision OR NLP OR natural language processing&quot;: TypeError: __vite_ssr_import_0__.default is not a function
+    at NewsAPIScraper.apiRequest (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:490:28)
+    at NewsAPIScraper.performScrape (/home/tarpediem/AI-news/ai-news-app/src/strategies/APIScraper.ts:44:37)
+    at ErrorHandler.withRetry (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:174:16)
+    at RequestQueue.executeRequest (/home/tarpediem/AI-news/ai-news-app/src/utils/requestQueue.ts:259:22)
+
+            </system-err>
+            <failure message="expected [] to have a length of 1 but got +0" type="AssertionError">
+AssertionError: expected [] to have a length of 1 but got +0
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ src/tests/integration/scraping-workflow.test.ts:293:31
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; Multi-Scraper Workflow &gt; should filter articles by category across scrapers" time="0.201">
+            <failure message="expected [] to have a length of 1 but got +0" type="AssertionError">
+AssertionError: expected [] to have a length of 1 but got +0
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ src/tests/integration/scraping-workflow.test.ts:332:31
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; Multi-Scraper Workflow &gt; should respect article limits across scrapers" time="0.203">
+            <system-err>
+NewsAPI query failed for &quot;artificial intelligence OR AI OR machine learning&quot;: TypeError: __vite_ssr_import_0__.default is not a function
+    at NewsAPIScraper.apiRequest (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:490:28)
+    at NewsAPIScraper.performScrape (/home/tarpediem/AI-news/ai-news-app/src/strategies/APIScraper.ts:44:37)
+    at /home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:69:22
+    at ErrorHandler.withTimeout (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:216:26)
+    at __vite_ssr_import_4__.throttledRequest.scraperId (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:68:15)
+    at ErrorHandler.withRetry (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:174:22)
+    at RequestQueue.executeRequest (/home/tarpediem/AI-news/ai-news-app/src/utils/requestQueue.ts:259:28)
+NewsAPI query failed for &quot;deep learning OR neural networks OR GPT&quot;: TypeError: __vite_ssr_import_0__.default is not a function
+    at NewsAPIScraper.apiRequest (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:490:28)
+    at NewsAPIScraper.performScrape (/home/tarpediem/AI-news/ai-news-app/src/strategies/APIScraper.ts:44:37)
+NewsAPI query failed for &quot;OpenAI OR ChatGPT OR Anthropic OR Claude&quot;: TypeError: __vite_ssr_import_0__.default is not a function
+    at NewsAPIScraper.apiRequest (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:490:28)
+    at NewsAPIScraper.performScrape (/home/tarpediem/AI-news/ai-news-app/src/strategies/APIScraper.ts:44:37)
+    at ErrorHandler.withRetry (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:174:16)
+    at RequestQueue.executeRequest (/home/tarpediem/AI-news/ai-news-app/src/utils/requestQueue.ts:259:22)
+NewsAPI query failed for &quot;computer vision OR NLP OR natural language processing&quot;: TypeError: __vite_ssr_import_0__.default is not a function
+    at NewsAPIScraper.apiRequest (/home/tarpediem/AI-news/ai-news-app/src/abstracts/BaseScraper.ts:490:28)
+    at NewsAPIScraper.performScrape (/home/tarpediem/AI-news/ai-news-app/src/strategies/APIScraper.ts:44:37)
+    at ErrorHandler.withRetry (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:174:16)
+    at RequestQueue.executeRequest (/home/tarpediem/AI-news/ai-news-app/src/utils/requestQueue.ts:259:22)
+
+            </system-err>
+            <failure message="expected [] to have a length of 2 but got +0" type="AssertionError">
+AssertionError: expected [] to have a length of 2 but got +0
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ src/tests/integration/scraping-workflow.test.ts:362:31
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; Health Check Workflow &gt; should perform health checks on all scrapers" time="0.002">
+            <failure message="expected false to be true // Object.is equality" type="AssertionError">
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/tests/integration/scraping-workflow.test.ts:387:41
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; Health Check Workflow &gt; should detect unhealthy scrapers" time="0.001">
+            <failure message="expected &apos;degraded&apos; to be &apos;down&apos; // Object.is equality" type="AssertionError">
+AssertionError: expected &apos;degraded&apos; to be &apos;down&apos; // Object.is equality
+
+- Expected
++ Received
+
+- down
++ degraded
+
+ ❯ src/tests/integration/scraping-workflow.test.ts:410:40
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; Error Handling and Recovery &gt; should continue processing after individual scraper failures" time="10.002">
+            <failure message="Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;." type="Error">
+Error: Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;.
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/integration/scraping-workflow.test.ts" name="Scraping Workflow Integration &gt; Performance and Load Testing &gt; should handle concurrent scraping requests" time="10.005">
+            <failure message="Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;." type="Error">
+Error: Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;.
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/tests/performance/performance.test.tsx" timestamp="2025-08-04T06:22:04.286Z" hostname="tarpediem-hx99g" tests="15" failures="11" errors="0" skipped="0" time="81.267">
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; Scraper Manager Performance &gt; should not block the main thread for more than 100ms" time="10.007">
+            <system-out>
+Test duration: 10005.57ms
+
+            </system-out>
+            <failure message="Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;." type="Error">
+Error: Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;.
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; Scraper Manager Performance &gt; should handle timeout errors gracefully" time="10.004">
+            <system-out>
+Test duration: 10004.11ms
+
+            </system-out>
+            <failure message="Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;." type="Error">
+Error: Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;.
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; Scraper Manager Performance &gt; should not create memory leaks during scraping" time="10.003">
+            <system-out>
+Test duration: 10002.35ms
+
+            </system-out>
+            <failure message="Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;." type="Error">
+Error: Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;.
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; Scraper Manager Performance &gt; should handle concurrent scraping requests efficiently" time="10.011">
+            <system-out>
+Test duration: 10010.42ms
+
+            </system-out>
+            <failure message="Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;." type="Error">
+Error: Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;.
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; Virtual Scrolling Performance &gt; should render large lists without blocking" time="0.038">
+            <system-out>
+Test duration: 35.77ms
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; Virtual Scrolling Performance &gt; should handle rapid scrolling without performance degradation" time="0.015">
+            <system-out>
+Test duration: 13.79ms
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; State Management Performance &gt; should handle large state updates efficiently" time="0.026">
+            <system-out>
+Test duration: 25.51ms
+
+            </system-out>
+            <failure message="expected +0 to be 1000 // Object.is equality" type="AssertionError">
+AssertionError: expected +0 to be 1000 // Object.is equality
+
+- Expected
++ Received
+
+- 1000
++ 0
+
+ ❯ src/tests/performance/performance.test.tsx:244:37
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; State Management Performance &gt; should handle frequent filter updates without performance issues" time="0.019">
+            <system-out>
+Test duration: 19.25ms
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; Network Request Performance &gt; should timeout requests within reasonable time" time="10">
+            <system-out>
+Test duration: 10000.33ms
+
+            </system-out>
+            <failure message="Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;." type="Error">
+Error: Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;.
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; Network Request Performance &gt; should handle network errors gracefully" time="10.001">
+            <system-out>
+Test duration: 10000.40ms
+
+            </system-out>
+            <failure message="Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;." type="Error">
+Error: Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;.
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; Memory Leak Detection &gt; should not leak memory during component mounting/unmounting" time="0.12">
+            <system-out>
+Test duration: 116.86ms
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; Memory Leak Detection &gt; should clean up event listeners and timers" time="0.003">
+            <system-out>
+Test duration: 2.84ms
+
+            </system-out>
+            <failure message="expected &quot;clearTimeout&quot; to be called at least once" type="AssertionError">
+AssertionError: expected &quot;clearTimeout&quot; to be called at least once
+ ❯ src/tests/performance/performance.test.tsx:385:31
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; Progressive Loading &gt; should load articles progressively instead of blocking" time="1.006">
+            <system-out>
+Test duration: 1006.02ms
+
+            </system-out>
+            <failure message="expected 0 to be greater than 0
+
+Ignored nodes: comments, script, style
+[36m&lt;html&gt;[39m
+  [36m&lt;head /&gt;[39m
+  [36m&lt;body /&gt;[39m
+[36m&lt;/html&gt;[39m" type="AssertionError">
+AssertionError: expected 0 to be greater than 0
+
+Ignored nodes: comments, script, style
+&lt;html&gt;
+  &lt;head /&gt;
+  &lt;body /&gt;
+&lt;/html&gt;
+ ❯ waitFor.timeout src/tests/performance/performance.test.tsx:417:41
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; Error Recovery &gt; should recover from complete API failures" time="10.002">
+            <system-out>
+Test duration: 10001.22ms
+
+            </system-out>
+            <failure message="Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;." type="Error">
+Error: Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;.
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/performance/performance.test.tsx" name="Performance Issues Investigation &gt; Error Recovery &gt; should handle malformed API responses" time="10.01">
+            <system-out>
+Test duration: 10009.72ms
+
+            </system-out>
+            <failure message="Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;." type="Error">
+Error: Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with &quot;testTimeout&quot;.
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/tests/unit/components/VirtualScrollList.test.tsx" timestamp="2025-08-04T06:22:04.295Z" hostname="tarpediem-hx99g" tests="26" failures="20" errors="0" skipped="0" time="0.164">
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList &gt; should render visible items only" time="0.036">
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList &gt; should render first items initially" time="0.017">
+            <failure message="Invalid Chai property: toBeInTheDocument" type="Error">
+Error: Invalid Chai property: toBeInTheDocument
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:49:38
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList &gt; should handle scrolling and update visible items" time="0.01">
+            <failure message="Invalid Chai property: toBeInTheDocument" type="Error">
+Error: Invalid Chai property: toBeInTheDocument
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:59:27
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList &gt; should call onScroll callback when scrolling" time="0.016">
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList &gt; should handle custom overscan" time="0.01">
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList &gt; should use custom getItemKey function" time="0.006">
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList &gt; should handle empty items array" time="0.003">
+            <failure message="Invalid Chai property: toBeInTheDocument" type="Error">
+Error: Invalid Chai property: toBeInTheDocument
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:102:46
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList &gt; should apply custom className" time="0.007">
+            <failure message="Invalid Chai property: toHaveClass" type="Error">
+Error: Invalid Chai property: toHaveClass
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:111:27
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList &gt; should handle items with different heights correctly" time="0.01">
+            <failure message="Invalid Chai property: toHaveStyle" type="Error">
+Error: Invalid Chai property: toHaveStyle
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:120:23
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList &gt; should position items correctly" time="0.006">
+            <failure message="Invalid Chai property: toHaveStyle" type="Error">
+Error: Invalid Chai property: toHaveStyle
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:130:21
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList &gt; should handle scrolling state correctly" time="0.01">
+            <failure message="Invalid Chai property: toBeInTheDocument" type="Error">
+Error: Invalid Chai property: toBeInTheDocument
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:143:38
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList &gt; should cleanup timeout on unmount" time="0.006">
+            <failure message="expected &quot;clearTimeout&quot; to be called at least once" type="AssertionError">
+AssertionError: expected &quot;clearTimeout&quot; to be called at least once
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:153:29
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="useVirtualScroll hook &gt; should calculate visible range correctly" time="0.004">
+            <failure message="expected 4 to be 3 // Object.is equality" type="AssertionError">
+AssertionError: expected 4 to be 3 // Object.is equality
+
+- Expected
++ Received
+
+- 3
++ 4
+
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:169:41
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="useVirtualScroll hook &gt; should handle scroll updates" time="0.003">
+            <system-err>
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() =&gt; {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you&apos;re testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() =&gt; {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you&apos;re testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+            </system-err>
+            <failure message="expected +0 to be 500 // Object.is equality" type="AssertionError">
+AssertionError: expected +0 to be 500 // Object.is equality
+
+- Expected
++ Received
+
+- 500
++ 0
+
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:187:34
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="useVirtualScroll hook &gt; should reset isScrolling after delay" time="0.001">
+            <system-err>
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() =&gt; {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you&apos;re testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() =&gt; {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you&apos;re testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+            </system-err>
+            <failure message="expected false to be true // Object.is equality" type="AssertionError">
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:202:36
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="useVirtualScrollPerformance hook &gt; should track performance metrics" time="0.002">
+            <failure message="expected +0 to be 10 // Object.is equality" type="AssertionError">
+AssertionError: expected +0 to be 10 // Object.is equality
+
+- Expected
++ Received
+
+- 10
++ 0
+
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:224:45
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="useVirtualScrollPerformance hook &gt; should handle memory usage tracking" time="0.001">
+            <failure message="expected +0 to be 5000000 // Object.is equality" type="AssertionError">
+AssertionError: expected +0 to be 5000000 // Object.is equality
+
+- Expected
++ Received
+
+- 5000000
++ 0
+
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:249:44
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="useVirtualScrollPerformance hook &gt; should handle missing performance.memory gracefully" time="0.002">
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList Performance &gt; should handle large datasets efficiently" time="0.006">
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList Performance &gt; should handle rapid scrolling without performance issues" time="0">
+            <failure message="defaultProps is not defined" type="ReferenceError">
+ReferenceError: defaultProps is not defined
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:304:57
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList Performance &gt; should optimize re-renders with memoization" time="0.001">
+            <failure message="defaultProps is not defined" type="ReferenceError">
+ReferenceError: defaultProps is not defined
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:329:13
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList Edge Cases &gt; should handle itemHeight of 0" time="0.001">
+            <failure message="expected [Function] to not throw an error but &apos;ReferenceError: defaultProps is not d…&apos; was thrown" type="AssertionError">
+AssertionError: expected [Function] to not throw an error but &apos;ReferenceError: defaultProps is not d…&apos; was thrown
+
+- Expected: 
+undefined
+
++ Received: 
+&quot;ReferenceError: defaultProps is not defined&quot;
+
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:349:12
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList Edge Cases &gt; should handle containerHeight of 0" time="0.001">
+            <failure message="expected [Function] to not throw an error but &apos;ReferenceError: defaultProps is not d…&apos; was thrown" type="AssertionError">
+AssertionError: expected [Function] to not throw an error but &apos;ReferenceError: defaultProps is not d…&apos; was thrown
+
+- Expected: 
+undefined
+
++ Received: 
+&quot;ReferenceError: defaultProps is not defined&quot;
+
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:355:12
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList Edge Cases &gt; should handle items array changes" time="0.001">
+            <failure message="defaultProps is not defined" type="ReferenceError">
+ReferenceError: defaultProps is not defined
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:359:56
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList Edge Cases &gt; should handle negative scroll positions" time="0">
+            <failure message="defaultProps is not defined" type="ReferenceError">
+ReferenceError: defaultProps is not defined
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:379:57
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/components/VirtualScrollList.test.tsx" name="VirtualScrollList Edge Cases &gt; should handle scroll position beyond content" time="0">
+            <failure message="defaultProps is not defined" type="ReferenceError">
+ReferenceError: defaultProps is not defined
+ ❯ src/tests/unit/components/VirtualScrollList.test.tsx:391:57
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/tests/unit/scrapers/BaseScraper.test.ts" timestamp="2025-08-04T06:22:04.306Z" hostname="tarpediem-hx99g" tests="19" failures="4" errors="0" skipped="0" time="4.135">
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; constructor &gt; should initialize with valid config" time="0.002">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; constructor &gt; should throw error with invalid config" time="0.001">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; scrape &gt; should scrape articles successfully" time="0.102">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; scrape &gt; should throw error when scraper is disabled" time="0">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; scrape &gt; should apply category filtering" time="0.101">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; scrape &gt; should apply article limit" time="0.1">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; healthCheck &gt; should return healthy status" time="0.006">
+            <failure message="expected 0 to be greater than 0" type="AssertionError">
+AssertionError: expected 0 to be greater than 0
+ ❯ src/tests/unit/scrapers/BaseScraper.test.ts:94:35
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; healthCheck &gt; should handle health check errors" time="0.001">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; utility methods &gt; should generate unique article IDs" time="0">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; utility methods &gt; should clean HTML content" time="0.002">
+            <failure message="expected &apos;Test content with entities&apos; to be &apos;Test content with   entities&apos; // Object.is equality" type="AssertionError">
+AssertionError: expected &apos;Test content with entities&apos; to be &apos;Test content with   entities&apos; // Object.is equality
+
+- Expected
++ Received
+
+- Test content with   entities
++ Test content with entities
+
+ ❯ src/tests/unit/scrapers/BaseScraper.test.ts:133:21
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; utility methods &gt; should resolve relative URLs" time="0.001">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; utility methods &gt; should calculate relevance scores" time="0.001">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; utility methods &gt; should extract relevant tags" time="0.002">
+            <failure message="expected [ &apos;artificial intelligence&apos;, …(4) ] to include &apos;OpenAI&apos;" type="AssertionError">
+AssertionError: expected [ &apos;artificial intelligence&apos;, …(4) ] to include &apos;OpenAI&apos;
+ ❯ src/tests/unit/scrapers/BaseScraper.test.ts:168:20
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; utility methods &gt; should calculate recency scores" time="0">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; article processing &gt; should validate articles properly" time="0">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; article processing &gt; should enhance articles with missing data" time="0.001">
+            <failure message="expected 0 to be greater than 0" type="AssertionError">
+AssertionError: expected 0 to be greater than 0
+ ❯ src/tests/unit/scrapers/BaseScraper.test.ts:213:36
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; article processing &gt; should process articles with filtering and sorting" time="0.101">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; statistics tracking &gt; should track scraping statistics" time="0.101">
+        </testcase>
+        <testcase classname="src/tests/unit/scrapers/BaseScraper.test.ts" name="BaseScraper &gt; statistics tracking &gt; should track error statistics" time="3.607">
+            <system-err>
+Operation failed (attempt 1/4), retrying in 500ms: Scraping failed
+
+Operation failed (attempt 2/4), retrying in 1000ms: Scraping failed
+
+Operation failed (attempt 3/4), retrying in 2000ms: Scraping failed
+
+Error: {
+  timestamp: &apos;2025-08-04T06:20:46.846Z&apos;,
+  error: {
+    name: &apos;NewsError&apos;,
+    message: &apos;Scraping failed&apos;,
+    stack: &apos;NewsError: Scraping failed\n&apos; +
+      &apos;    at ErrorHandler.classifyError (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:146:12)\n&apos; +
+      &apos;    at ErrorHandler.withRetry (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:200:16)\n&apos; +
+      &apos;    at RequestQueue.executeRequest (/home/tarpediem/AI-news/ai-news-app/src/utils/requestQueue.ts:259:22)&apos;,
+    type: &apos;UNKNOWN_ERROR&apos;,
+    retryable: false,
+    statusCode: undefined,
+    context: { finalAttempt: true }
+  },
+  context: {
+    requestId: &apos;req_1754288443241_jzrpjm7ok&apos;,
+    priority: 1,
+    retries: 2,
+    context: { scraperId: &apos;test-scraper&apos;, operation: &apos;scrape&apos; }
+  }
+}
+Error: {
+  timestamp: &apos;2025-08-04T06:20:46.848Z&apos;,
+  error: {
+    name: &apos;NewsError&apos;,
+    message: &apos;Scraping failed&apos;,
+    stack: &apos;NewsError: Scraping failed\n&apos; +
+      &apos;    at ErrorHandler.classifyError (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:146:12)\n&apos; +
+      &apos;    at ErrorHandler.withRetry (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:200:16)\n&apos; +
+      &apos;    at RequestQueue.executeRequest (/home/tarpediem/AI-news/ai-news-app/src/utils/requestQueue.ts:259:22)&apos;,
+    type: &apos;UNKNOWN_ERROR&apos;,
+    retryable: false,
+    statusCode: undefined,
+    context: { finalAttempt: true }
+  },
+  context: { scraperId: &apos;test-scraper&apos;, operation: &apos;scrape&apos;, options: {} }
+}
+
+            </system-err>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/tests/unit/services/ScraperFactory.test.ts" timestamp="2025-08-04T06:22:04.311Z" hostname="tarpediem-hx99g" tests="22" failures="3" errors="0" skipped="0" time="4.239">
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperFactory &gt; createScraper &gt; should create RSS scraper" time="0.002">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperFactory &gt; createScraper &gt; should create API scraper" time="0.001">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperFactory &gt; createScraper &gt; should create web scraper" time="0">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperFactory &gt; createScraper &gt; should throw error for unknown scraper type" time="0.001">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperFactory &gt; registerScraper &gt; should register new scraper type" time="0.001">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperFactory &gt; getAvailableTypes &gt; should return available scraper types" time="0.001">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperFactory &gt; findScraper &gt; should find scraper for URL" time="0.006">
+            <failure message="expected null to be truthy" type="AssertionError">
+AssertionError: expected null to be truthy
+
+- Expected: 
+null
+
++ Received: 
+false
+
+ ❯ src/tests/unit/services/ScraperFactory.test.ts:142:23
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperFactory &gt; findScraper &gt; should return null for unknown URL" time="0">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; register &gt; should register scraper" time="0.001">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; register &gt; should update stats when registering" time="0">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; getScrapersByCategory &gt; should return scrapers by category" time="0.001">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; scrapeAll &gt; should scrape all active scrapers" time="0.104">
+            <failure message="expected [ { id: &apos;scraper1-article&apos;, …(10) } ] to have a length of 2 but got 1" type="AssertionError">
+AssertionError: expected [ { id: &apos;scraper1-article&apos;, …(10) } ] to have a length of 2 but got 1
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ src/tests/unit/services/ScraperFactory.test.ts:222:31
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; scrapeAll &gt; should handle scraping errors" time="3.609">
+            <system-err>
+Operation failed (attempt 1/4), retrying in 500ms: Scraping failed
+
+Operation failed (attempt 2/4), retrying in 1000ms: Scraping failed
+
+Operation failed (attempt 3/4), retrying in 2000ms: Scraping failed
+
+Error: {
+  timestamp: &apos;2025-08-04T06:20:46.440Z&apos;,
+  error: {
+    name: &apos;NewsError&apos;,
+    message: &apos;Scraping failed&apos;,
+    stack: &apos;NewsError: Scraping failed\n&apos; +
+      &apos;    at ErrorHandler.classifyError (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:146:12)\n&apos; +
+      &apos;    at ErrorHandler.withRetry (/home/tarpediem/AI-news/ai-news-app/src/utils/errorHandler.ts:200:16)\n&apos; +
+      &apos;    at RequestQueue.executeRequest (/home/tarpediem/AI-news/ai-news-app/src/utils/requestQueue.ts:259:22)&apos;,
+    type: &apos;UNKNOWN_ERROR&apos;,
+    retryable: false,
+    statusCode: undefined,
+    context: { finalAttempt: true }
+  },
+  context: {
+    requestId: &apos;req_1754288442833_3aq5fqho9&apos;,
+    priority: 1,
+    retries: 2,
+    context: { scraperId: &apos;failing&apos;, operation: &apos;scrape&apos; }
+  }
+}
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; scrapeAll &gt; should filter by categories" time="0.101">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; scrapeAll &gt; should apply article limit" time="0.101">
+            <failure message="expected [ { id: &apos;scraper1-article&apos;, …(10) } ] to have a length of 2 but got 1" type="AssertionError">
+AssertionError: expected [ { id: &apos;scraper1-article&apos;, …(10) } ] to have a length of 2 but got 1
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ src/tests/unit/services/ScraperFactory.test.ts:278:31
+            </failure>
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; scrapeAll &gt; should deduplicate articles" time="0.102">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; healthCheckAll &gt; should check health of all scrapers" time="0.001">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; healthCheckAll &gt; should handle health check errors" time="0">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; event system &gt; should emit scraping events" time="0.104">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; event system &gt; should emit health check events" time="0.001">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; event system &gt; should remove event listeners" time="0.1">
+        </testcase>
+        <testcase classname="src/tests/unit/services/ScraperFactory.test.ts" name="ScraperManager &gt; statistics &gt; should track scraping statistics" time="0">
+        </testcase>
+    </testsuite>
+</testsuites>

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
 import { TrendingUp, Sparkles, Zap, Star, Hash, Flame } from 'lucide-react';
+import React, { useState } from 'react';
+
 import { useTrendingTopics } from '../hooks/useNews';
 import { cn } from '../lib/utils';
 

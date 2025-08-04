@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Crawl4AI service for web scraping
+  crawl4ai:
+    image: unclecode/crawl4ai:latest
+    container_name: ai-news-crawl4ai
+    ports:
+      - "11235:11235"
+    environment:
+      - CRAWL4AI_API_TOKEN=${CRAWL4AI_API_TOKEN:-your_secret_token}
+    volumes:
+      - crawl4ai_cache:/app/cache
+    networks:
+      - ai-news-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11235/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Scraper backend service
+  scraper-backend:
+    build:
+      context: ./scraper-backend
+      dockerfile: Dockerfile
+    container_name: ai-news-scraper
+    ports:
+      - "8001:8001"
+    environment:
+      - NODE_ENV=production
+      - CRAWL4AI_URL=http://crawl4ai:11235
+      - CRAWL4AI_API_TOKEN=${CRAWL4AI_API_TOKEN:-your_secret_token}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PORT=8001
+    depends_on:
+      - crawl4ai
+    networks:
+      - ai-news-network
+    restart: unless-stopped
+    volumes:
+      - ./scraper-backend:/app
+      - /app/node_modules
+
+  # Frontend service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-news-frontend
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_SCRAPER_API_URL=http://localhost:8001
+    depends_on:
+      - scraper-backend
+    networks:
+      - ai-news-network
+    restart: unless-stopped
+
+networks:
+  ai-news-network:
+    driver: bridge
+
+volumes:
+  crawl4ai_cache:
