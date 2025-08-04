@@ -62,7 +62,7 @@ const getDefaultSettings = () => {
   };
 };
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
+const SettingsPanelComponent: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<'general' | 'ai-models' | 'appearance' | 'accessibility' | 'data' | 'security'>('general');
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [importData, setImportData] = useState('');
@@ -83,7 +83,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
   const { exportData, importData: importStoreData, reset, getStats } = useAppStore();
   const { announceMessage } = useAccessibility();
 
-  const stats = getStats();
+  // Memoize stats to prevent excessive recalculation
+  const stats = React.useMemo(() => getStats(), [getStats]);
 
   // Load models when API key is set
   useEffect(() => {
@@ -112,19 +113,26 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
 
   // Update API settings and save to AI service
   const updateAPISettings = useCallback((updates: Partial<typeof apiSettings>) => {
-    const newSettings = { ...apiSettings, ...updates };
-    setApiSettings(newSettings);
-    
-    // Convert to AI settings format and save
-    const aiSettings = convertFromLegacySettings(newSettings);
-    aiService.saveSettings(aiSettings);
+    // Use functional update to avoid stale closure
+    setApiSettings(prevSettings => {
+      const newSettings = { ...prevSettings, ...updates };
+      
+      // Convert to AI settings format and save
+      const aiSettings = convertFromLegacySettings(newSettings);
+      aiService.saveSettings(aiSettings);
+      
+      return newSettings;
+    });
     
     announceMessage('AI settings updated');
-  }, [apiSettings, announceMessage]);
+  }, [announceMessage]); // Remove apiSettings from dependency array
 
   // Test API key validity
   const testApiKey = useCallback(async () => {
-    if (!apiSettings.openrouterApiKey.trim()) {
+    // Get current API key from state to avoid stale closure
+    const currentApiKey = apiSettings.openrouterApiKey;
+    
+    if (!currentApiKey.trim()) {
       setApiKeyTestResult('error');
       announceMessage('Please enter an API key first', 'assertive');
       return;
@@ -134,7 +142,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
     setApiKeyTestResult(null);
 
     try {
-      const isValid = await aiService.validateApiKey(apiSettings.openrouterApiKey);
+      const isValid = await aiService.validateApiKey(currentApiKey);
       
       if (isValid) {
         setApiKeyTestResult('success');
@@ -147,6 +155,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
           setAvailableModels(models);
         } catch (error) {
           console.error('Failed to refresh models:', error);
+          // Reset to default models on error
+          setAvailableModels(AVAILABLE_MODELS);
         } finally {
           setIsLoadingModels(false);
         }
@@ -1128,5 +1138,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
     </div>
   );
 };
+
+// Export with React.memo to prevent unnecessary re-renders when props don't change
+export const SettingsPanel = React.memo(SettingsPanelComponent, (prevProps, nextProps) => {
+  return prevProps.isOpen === nextProps.isOpen && prevProps.onClose === nextProps.onClose;
+});
 
 export default SettingsPanel;
