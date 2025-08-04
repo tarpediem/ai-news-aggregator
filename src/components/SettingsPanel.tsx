@@ -5,7 +5,9 @@
  */
 
 import { Eye, EyeOff, Key, Settings, Palette, Activity, Database, Shield, Zap, Search, CheckCircle, XCircle, AlertCircle, Loader } from 'lucide-react';
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+
+import { useCircuitBreaker } from '../utils/circuitBreaker';
 
 import { aiService } from '../services/aiService';
 import { useUISettings, useUserPreferences, useAppStore } from '../store/AppStore';
@@ -63,6 +65,9 @@ const getDefaultSettings = () => {
 };
 
 const SettingsPanelComponent: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
+  // Circuit breaker protection
+  const shouldRender = useCircuitBreaker('SettingsPanel');
+  
   const [activeTab, setActiveTab] = useState<'general' | 'ai-models' | 'appearance' | 'accessibility' | 'data' | 'security'>('general');
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [importData, setImportData] = useState('');
@@ -77,6 +82,10 @@ const SettingsPanelComponent: React.FC<SettingsPanelProps> = ({ isOpen, onClose 
   const [apiKeyTestResult, setApiKeyTestResult] = useState<'success' | 'error' | null>(null);
   const [searchModelQuery, setSearchModelQuery] = useState('');
   const [selectedModelCategory, setSelectedModelCategory] = useState<'all' | 'budget' | 'balanced' | 'premium'>('all');
+  
+  // Use refs to prevent stale closures
+  const lastApiKeyRef = useRef('');
+  const updateInProgressRef = useRef(false);
 
   const uiSettings = useUISettings();
   const userPreferences = useUserPreferences();
@@ -111,66 +120,130 @@ const SettingsPanelComponent: React.FC<SettingsPanelProps> = ({ isOpen, onClose 
     }
   }, [apiSettings.openrouterApiKey]);
 
-  // Update API settings and save to AI service
+  // Update API settings and save to AI service with loop protection
   const updateAPISettings = useCallback((updates: Partial<typeof apiSettings>) => {
-    // Use functional update to avoid stale closure
-    setApiSettings(prevSettings => {
-      const newSettings = { ...prevSettings, ...updates };
-      
-      // Convert to AI settings format and save
-      const aiSettings = convertFromLegacySettings(newSettings);
-      aiService.saveSettings(aiSettings);
-      
-      return newSettings;
-    });
-    
-    announceMessage('AI settings updated');
-  }, [announceMessage]); // Remove apiSettings from dependency array
-
-  // Test API key validity
-  const testApiKey = useCallback(async () => {
-    // Get current API key from state to avoid stale closure
-    const currentApiKey = apiSettings.openrouterApiKey;
-    
-    if (!currentApiKey.trim()) {
-      setApiKeyTestResult('error');
-      announceMessage('Please enter an API key first', 'assertive');
+    // Prevent concurrent updates
+    if (updateInProgressRef.current) {
+      console.warn('⏳ API settings update already in progress, skipping');
       return;
     }
-
-    setIsTestingApiKey(true);
-    setApiKeyTestResult(null);
-
+    
+    updateInProgressRef.current = true;
+    
     try {
-      const isValid = await aiService.validateApiKey(currentApiKey);
+      console.log('🔧 Updating API settings:', Object.keys(updates));
       
-      if (isValid) {
-        setApiKeyTestResult('success');
-        announceMessage('API key is valid');
+      // Use functional update to avoid stale closure
+      setApiSettings(prevSettings => {
+        const newSettings = { ...prevSettings, ...updates };
         
-        // Refresh models with the new key
-        setIsLoadingModels(true);
-        try {
-          const models = await aiService.fetchAvailableModels();
-          setAvailableModels(models);
-        } catch (error) {
-          console.error('Failed to refresh models:', error);
-          // Reset to default models on error
-          setAvailableModels(AVAILABLE_MODELS);
-        } finally {
-          setIsLoadingModels(false);
+        // Prevent unnecessary updates if nothing actually changed
+        const hasChanges = Object.keys(updates).some(
+          key => prevSettings[key as keyof typeof prevSettings] !== updates[key as keyof typeof updates]
+        );
+        
+        if (!hasChanges) {
+          console.log('📋 API settings unchanged, skipping update');
+          return prevSettings;
         }
-      } else {
-        setApiKeyTestResult('error');
-        announceMessage('API key is invalid', 'assertive');
+        
+        // Convert to AI settings format and save
+        const aiSettings = convertFromLegacySettings(newSettings);
+        aiService.saveSettings(aiSettings);
+        
+        return newSettings;
+      });
+      
+      // Use try-catch for announceMessage to prevent crashes
+      try {
+        announceMessage('AI settings updated');
+      } catch (error) {
+        console.warn('Failed to announce message:', error);
       }
-    } catch (error) {
-      setApiKeyTestResult('error');
-      announceMessage('Failed to test API key', 'assertive');
     } finally {
-      setIsTestingApiKey(false);
+      updateInProgressRef.current = false;
     }
-  }, [apiSettings.openrouterApiKey, announceMessage]);
+  }, []); // Remove all dependencies to prevent recreation
+
+  // Test API key validity with ref-based approach to avoid stale closures
+  const testApiKey = useCallback(async () => {
+    // Get current API key from state to avoid stale closure
+    setApiSettings(currentSettings => {
+      const currentApiKey = currentSettings.openrouterApiKey;
+      
+      // Check if API key changed since last test
+      if (lastApiKeyRef.current === currentApiKey && currentApiKey.trim()) {
+        console.log('🔑 API key unchanged since last test, using cached result');
+        return currentSettings; // No change to state
+      }
+      
+      lastApiKeyRef.current = currentApiKey;
+      
+      if (!currentApiKey.trim()) {
+        setApiKeyTestResult('error');
+        try {
+          announceMessage('Please enter an API key first', 'assertive');
+        } catch (error) {
+          console.warn('Failed to announce message:', error);
+        }
+        return currentSettings;
+      }
+
+      // Start testing
+      setIsTestingApiKey(true);
+      setApiKeyTestResult(null);
+
+      // Async API key validation
+      (async () => {
+        try {
+          console.log('🔑 Testing API key...');
+          const isValid = await aiService.validateApiKey(currentApiKey);
+          
+          if (isValid) {
+            setApiKeyTestResult('success');
+            try {
+              announceMessage('API key is valid');
+            } catch (error) {
+              console.warn('Failed to announce message:', error);
+            }
+            
+            // Refresh models with the new key
+            setIsLoadingModels(true);
+            try {
+              const models = await aiService.fetchAvailableModels();
+              setAvailableModels(models);
+              console.log(`🚀 Loaded ${models.length} models`);
+            } catch (error) {
+              console.error('Failed to refresh models:', error);
+              // Reset to default models on error
+              setAvailableModels(AVAILABLE_MODELS);
+            } finally {
+              setIsLoadingModels(false);
+            }
+          } else {
+            setApiKeyTestResult('error');
+            try {
+              announceMessage('API key is invalid', 'assertive');
+            } catch (error) {
+              console.warn('Failed to announce message:', error);
+            }
+          }
+        } catch (error) {
+          console.error('API key test failed:', error);
+          setApiKeyTestResult('error');
+          try {
+            announceMessage('Failed to test API key', 'assertive');
+          } catch (announceError) {
+            console.warn('Failed to announce message:', announceError);
+          }
+        } finally {
+          setIsTestingApiKey(false);
+        }
+      })();
+      
+      return currentSettings; // No change to state
+    });
+  }, []); // No dependencies to prevent recreation
 
   // Filter models based on search and category
   const filteredModels = availableModels.filter(model => {
@@ -223,6 +296,25 @@ const SettingsPanelComponent: React.FC<SettingsPanelProps> = ({ isOpen, onClose 
   };
 
   if (!isOpen) return null;
+  
+  // Circuit breaker protection
+  if (!shouldRender) {
+    return (
+      <div className="settings-panel fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-2xl max-w-md w-full mx-4 p-8 text-center">
+          <div className="text-4xl mb-4">⚠️</div>
+          <h2 className="text-xl font-bold mb-2">Settings Temporarily Disabled</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Infinite loop protection is active.</p>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="settings-panel fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">

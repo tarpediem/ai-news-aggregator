@@ -174,12 +174,13 @@ export const useAppStore = create<AppState>()(
 
           // News actions
           setArticles: (articles) => set((state) => {
+            console.log(`📰 Setting articles: ${articles.length} articles`);
             state.articles = articles;
             state.totalArticles = articles.length;
             state.lastUpdated = new Date();
-            // Don't call applyFilters here - let subscriptions handle it
+            // IMPORTANT: Don't call applyFilters here - let subscriptions handle it
             // This prevents the infinite loop by breaking the cycle
-          }),
+          }, false, 'setArticles'),
 
           addArticles: (articles) => set((state) => {
             const existingIds = new Set(state.articles.map(a => a.id));
@@ -230,53 +231,71 @@ export const useAppStore = create<AppState>()(
           applyFilters: () => {
             const state = get();
             
-            // Prevent recursive calls and excessive filtering
+            // Enhanced loop prevention
             if (state.isLoading) {
+              console.log('⏸️ Skipping applyFilters - store is loading');
               return;
             }
             
-            let filtered = [...state.articles];
-
-            // Category filter
-            if (state.selectedCategory !== 'all') {
-              filtered = filtered.filter(article => article.category === state.selectedCategory);
+            // Use a static flag to prevent recursive calls
+            if ((applyFilters as any).isRunning) {
+              console.warn('🔄 applyFilters already running, preventing recursion');
+              return;
             }
-
-            // Search filter
-            if (state.searchQuery.trim()) {
-              const query = state.searchQuery.toLowerCase();
-              filtered = filtered.filter(article =>
-                article.title.toLowerCase().includes(query) ||
-                article.description.toLowerCase().includes(query) ||
-                article.tags?.some(tag => tag.toLowerCase().includes(query)) ||
-                article.author?.toLowerCase().includes(query)
-              );
-            }
-
-            // Sort
-            filtered.sort((a, b) => {
-              let comparison = 0;
+            
+            try {
+              (applyFilters as any).isRunning = true;
               
-              switch (state.sortBy) {
-                case 'relevance':
-                  comparison = (b.relevanceScore || 0) - (a.relevanceScore || 0);
-                  break;
-                case 'date':
-                  comparison = new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
-                  break;
-                case 'source':
-                  comparison = a.source.name.localeCompare(b.source.name);
-                  break;
+              let filtered = [...state.articles];
+
+              // Category filter
+              if (state.selectedCategory !== 'all') {
+                filtered = filtered.filter(article => article.category === state.selectedCategory);
               }
 
-              return state.sortOrder === 'asc' ? -comparison : comparison;
-            });
+              // Search filter
+              if (state.searchQuery.trim()) {
+                const query = state.searchQuery.toLowerCase();
+                filtered = filtered.filter(article =>
+                  article.title.toLowerCase().includes(query) ||
+                  article.description.toLowerCase().includes(query) ||
+                  article.tags?.some(tag => tag.toLowerCase().includes(query)) ||
+                  article.author?.toLowerCase().includes(query)
+                );
+              }
 
-            // Only update if the filtered results actually changed
-            const currentFiltered = state.filteredArticles;
-            if (currentFiltered.length !== filtered.length || 
-                JSON.stringify(currentFiltered.map(a => a.id)) !== JSON.stringify(filtered.map(a => a.id))) {
-              set({ filteredArticles: filtered }, false, 'applyFilters');
+              // Sort
+              filtered.sort((a, b) => {
+                let comparison = 0;
+                
+                switch (state.sortBy) {
+                  case 'relevance':
+                    comparison = (b.relevanceScore || 0) - (a.relevanceScore || 0);
+                    break;
+                  case 'date':
+                    comparison = new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+                    break;
+                  case 'source':
+                    comparison = a.source.name.localeCompare(b.source.name);
+                    break;
+                }
+
+                return state.sortOrder === 'asc' ? -comparison : comparison;
+              });
+
+              // More efficient change detection using ID arrays
+              const currentFiltered = state.filteredArticles;
+              const currentIds = currentFiltered.map(a => a.id).join(',');
+              const newIds = filtered.map(a => a.id).join(',');
+              
+              if (currentIds !== newIds) {
+                console.log(`🔍 Updating filtered articles: ${currentFiltered.length} → ${filtered.length}`);
+                set({ filteredArticles: filtered }, false, 'applyFilters');
+              } else {
+                console.log('📋 Filtered articles unchanged, skipping update');
+              }
+            } finally {
+              (applyFilters as any).isRunning = false;
             }
           },
 
@@ -583,36 +602,95 @@ export const useUISettings = () => useAppStore((state) => ({
          JSON.stringify(a.sidebar) === JSON.stringify(b.sidebar);
 });
 
-// Store subscriptions for side effects
+// Store subscriptions for side effects with circuit breaker protection
+let subscriptionActive = false;
+let filterTimeout: NodeJS.Timeout | null = null;
+let lastFilterApply = 0;
+const FILTER_COOLDOWN = 300; // Minimum time between filter applications
+
 export const setupStoreSubscriptions = () => {
-  // Filter subscriptions - apply filters when relevant state changes
-  let filterTimeout: NodeJS.Timeout | null = null;
+  // Prevent duplicate subscriptions
+  if (subscriptionActive) {
+    console.warn('Store subscriptions already active, skipping setup');
+    return;
+  }
+  
+  subscriptionActive = true;
+  console.log('🔧 Setting up store subscriptions with loop protection');
+  
+  // Filter subscriptions with enhanced loop protection
+  let filterApplicationCount = 0;
+  const FILTER_APPLICATION_LIMIT = 10;
+  const FILTER_RESET_INTERVAL = 2000;
+  
+  // Reset filter application count periodically
+  setInterval(() => {
+    filterApplicationCount = 0;
+  }, FILTER_RESET_INTERVAL);
   
   useAppStore.subscribe(
-    (state) => ({
-      articles: state.articles.length, // Only watch length to avoid deep comparison
-      selectedCategory: state.selectedCategory,
-      searchQuery: state.searchQuery,
-      sortBy: state.sortBy,
-      sortOrder: state.sortOrder
-    }),
+    (state) => {
+      // Use a stable hash instead of length to detect real changes
+      const articlesHash = state.articles.slice(0, 5).map(a => a.id).join(',');
+      return {
+        articlesHash,
+        selectedCategory: state.selectedCategory,
+        searchQuery: state.searchQuery.trim(),
+        sortBy: state.sortBy,
+        sortOrder: state.sortOrder,
+        articlesCount: state.articles.length
+      };
+    },
     (current, previous) => {
-      // Only apply filters if something actually changed
-      if (JSON.stringify(current) === JSON.stringify(previous)) {
+      // Shallow equality check instead of JSON stringify
+      const hasChanged = current.articlesHash !== previous.articlesHash ||
+                        current.selectedCategory !== previous.selectedCategory ||
+                        current.searchQuery !== previous.searchQuery ||
+                        current.sortBy !== previous.sortBy ||
+                        current.sortOrder !== previous.sortOrder ||
+                        current.articlesCount !== previous.articlesCount;
+      
+      if (!hasChanged) {
         return;
       }
       
-      // Debounce filter application to avoid rapid fire updates
+      // Circuit breaker for filter applications
+      if (filterApplicationCount >= FILTER_APPLICATION_LIMIT) {
+        console.warn('🛑 Filter application limit reached, preventing infinite loop');
+        return;
+      }
+      
+      // Cooldown check
+      const now = Date.now();
+      if (now - lastFilterApply < FILTER_COOLDOWN) {
+        console.log('⏳ Filter application in cooldown, skipping');
+        return;
+      }
+      
+      // Clear existing timeout
       if (filterTimeout) {
         clearTimeout(filterTimeout);
       }
+      
+      // Debounced filter application with error handling
       filterTimeout = setTimeout(() => {
         try {
-          useAppStore.getState().applyFilters();
+          filterApplicationCount++;
+          lastFilterApply = Date.now();
+          
+          const state = useAppStore.getState();
+          if (state.isLoading) {
+            console.log('⏸️ Skipping filter application - store is loading');
+            return;
+          }
+          
+          console.log(`🔍 Applying filters (${filterApplicationCount}/${FILTER_APPLICATION_LIMIT})`);
+          state.applyFilters();
         } catch (error) {
-          console.warn('Filter application failed:', error);
+          console.error('❌ Filter application failed:', error);
+          filterApplicationCount--; // Don't penalize for errors
         }
-      }, 150);
+      }, 250); // Increased debounce time
     },
     {
       fireImmediately: false

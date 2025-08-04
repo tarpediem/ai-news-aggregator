@@ -3,7 +3,9 @@
  * Implements ARIA compliance, keyboard navigation, and screen reader support
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+
+import { useCircuitBreaker } from '../utils/circuitBreaker';
 
 interface AccessibilitySettings {
   highContrast: boolean;
@@ -41,6 +43,9 @@ const defaultSettings: AccessibilitySettings = {
 };
 
 export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Circuit breaker protection
+  const shouldRender = useCircuitBreaker('AccessibilityProvider');
+  
   const [settings, setSettings] = useState<AccessibilitySettings>(() => {
     // Load settings from localStorage
     const saved = localStorage.getItem('accessibility-settings');
@@ -190,7 +195,15 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [settings.keyboardNavigation, focusTrapped]);
 
   const updateSetting = useCallback((key: keyof AccessibilitySettings, value: boolean) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+    console.log(`♿ Accessibility setting update: ${key} = ${value}`);
+    setSettings(prev => {
+      // Prevent unnecessary updates
+      if (prev[key] === value) {
+        console.log(`📋 Accessibility setting ${key} unchanged, skipping update`);
+        return prev;
+      }
+      return { ...prev, [key]: value };
+    });
   }, []);
 
   const announceMessage = useCallback((message: string, priority: 'polite' | 'assertive' = 'polite') => {
@@ -272,6 +285,20 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       focusPrevious,
     },
   };
+  
+  // Circuit breaker protection
+  if (!shouldRender) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-yellow-50">
+        <div className="text-center p-8">
+          <div className="text-4xl mb-4">⚠️</div>
+          <h2 className="text-xl font-bold text-yellow-800 mb-2">Accessibility Provider Disabled</h2>
+          <p className="text-yellow-600 mb-4">Infinite loop protection is active.</p>
+          <p className="text-yellow-500 text-sm">Basic functionality will continue to work.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AccessibilityContext.Provider value={contextValue}>

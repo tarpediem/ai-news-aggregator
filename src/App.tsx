@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Newspaper, Brain, RefreshCw, Github, Moon, Sun, Sparkles, Zap, Settings } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+
+import { useCircuitBreaker } from './utils/circuitBreaker';
 
 import { AccessibilityProvider, SkipToContent } from './components/AccessibilityProvider';
 import { AIEnhancedNewsCard } from './components/AIEnhancedNewsCard';
@@ -26,19 +28,24 @@ const queryClient = new QueryClient({
   },
 });
 
-// Temporarily disable store subscriptions to prevent infinite loops
-// TODO: Re-enable once we verify the main app works without loops
-// let subscriptionsInitialized = false;
-// if (!subscriptionsInitialized && typeof window !== 'undefined') {
-//   try {
-//     setupStoreSubscriptions();
-//     subscriptionsInitialized = true;
-//   } catch (error) {
-//     console.warn('Failed to setup store subscriptions:', error);
-//   }
-// }
+// Initialize store subscriptions with loop protection
+let subscriptionsInitialized = false;
+if (!subscriptionsInitialized && typeof window !== 'undefined') {
+  try {
+    import('./store/AppStore').then(({ setupStoreSubscriptions }) => {
+      setupStoreSubscriptions();
+      subscriptionsInitialized = true;
+      console.log('✅ Store subscriptions initialized with loop protection');
+    });
+  } catch (error) {
+    console.warn('Failed to setup store subscriptions:', error);
+  }
+}
 
 function AppContent() {
+  // Circuit breaker protection
+  const shouldRender = useCircuitBreaker('AppContent');
+  
   const [activeTab, setActiveTab] = useState<'news' | 'papers'>('news');
   const [selectedCategory, setSelectedCategory] = useState<NewsCategory | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,6 +53,10 @@ function AppContent() {
   const [useVirtualization, setUseVirtualization] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [enableAISummary] = useState(true);
+  
+  // Use refs to prevent stale closures and unnecessary re-renders
+  const darkModeInitialized = useRef(false);
+  const lastSearchQuery = useRef('');
   
   // Responsive grid configuration
   const { itemsPerRow, containerHeight } = useResponsiveGrid();
@@ -58,42 +69,78 @@ function AppContent() {
   const { data: searchResults, isLoading: searchLoading } = useSearchNews(searchQuery);
   const refreshNews = useRefreshNews();
 
-  const handleSearch = (query: string) => {
+  // Memoized handlers to prevent unnecessary re-renders
+  const handleSearch = useCallback((query: string) => {
+    // Prevent duplicate search queries
+    if (lastSearchQuery.current === query) {
+      console.log('🔍 Search query unchanged, skipping update');
+      return;
+    }
+    
+    console.log(`🔍 Search query: "${lastSearchQuery.current}" → "${query}"`);
+    lastSearchQuery.current = query;
     setSearchQuery(query);
-  };
+  }, []);
 
-  const handleTopicClick = (topic: string) => {
-    setSearchQuery(topic);
-  };
+  const handleTopicClick = useCallback((topic: string) => {
+    console.log(`📌 Topic clicked: ${topic}`);
+    handleSearch(topic);
+  }, [handleSearch]);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
+    console.log('🔄 Refreshing news...');
     refreshNews();
-  };
+  }, [refreshNews]);
 
-  const toggleDarkMode = () => {
-    const newDarkMode = !isDarkMode;
-    setIsDarkMode(newDarkMode);
-    document.documentElement.classList.toggle('dark', newDarkMode);
-    localStorage.setItem('darkMode', JSON.stringify(newDarkMode));
-  };
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode(current => {
+      const newDarkMode = !current;
+      console.log(`🌓 Toggle dark mode: ${current} → ${newDarkMode}`);
+      
+      document.documentElement.classList.toggle('dark', newDarkMode);
+      localStorage.setItem('darkMode', JSON.stringify(newDarkMode));
+      
+      return newDarkMode;
+    });
+  }, []);
 
-  // Initialize dark mode from localStorage
+  // Initialize dark mode from localStorage - ONCE ONLY with ref protection
   useEffect(() => {
-    const savedDarkMode = localStorage.getItem('darkMode');
-    if (savedDarkMode) {
-      try {
+    if (darkModeInitialized.current) {
+      console.warn('🚫 Dark mode already initialized, preventing duplicate initialization');
+      return;
+    }
+    
+    console.log('🌓 Initializing dark mode from localStorage');
+    darkModeInitialized.current = true;
+    
+    try {
+      const savedDarkMode = localStorage.getItem('darkMode');
+      if (savedDarkMode) {
         const isDark = JSON.parse(savedDarkMode);
-        if (isDark !== isDarkMode) { // Only update if different to prevent loops
-          setIsDarkMode(isDark);
+        console.log(`💾 Loaded dark mode from storage: ${isDark}`);
+        
+        // Use callback to prevent state update if already correct
+        setIsDarkMode(currentMode => {
+          if (currentMode === isDark) {
+            console.log('🔄 Dark mode already correct, skipping update');
+            return currentMode;
+          }
+          
+          console.log(`🌓 Setting dark mode: ${currentMode} → ${isDark}`);
           document.documentElement.classList.toggle('dark', isDark);
-        }
-      } catch {
-        // Ignore parsing errors and set default
-        setIsDarkMode(false);
+          return isDark;
+        });
+      } else {
+        console.log('🆕 No saved dark mode, using default (light)');
         document.documentElement.classList.remove('dark');
       }
+    } catch (error) {
+      console.error('❌ Error initializing dark mode:', error);
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
     }
-  }, []); // Only run once on mount
+  }, []); // Empty dependency array - run ONCE only
 
   // Register service worker
   useEffect(() => {
@@ -109,6 +156,26 @@ function AppContent() {
   }, []);
 
   const displayData = searchQuery ? searchResults : newsData;
+  
+  // Circuit breaker protection
+  if (!shouldRender) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-red-50">
+        <div className="text-center p-8">
+          <div className="text-4xl mb-4">🛑</div>
+          <h2 className="text-xl font-bold text-red-800 mb-2">Infinite Loop Protection Active</h2>
+          <p className="text-red-600 mb-4">The app has been temporarily disabled to prevent crashes.</p>
+          <p className="text-red-500 text-sm">This will automatically resolve in a few seconds.</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AccessibilityProvider>
@@ -361,7 +428,22 @@ function AppContent() {
 }
 
 function App() {
+  const shouldRender = useCircuitBreaker('App');
+  
   console.log('🎪 App component rendering...');
+  
+  if (!shouldRender) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold mb-2">App Temporarily Disabled</h1>
+          <p className="text-gray-600">Infinite loop protection is active.</p>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <QueryClientProvider client={queryClient}>
       <AppContent />
