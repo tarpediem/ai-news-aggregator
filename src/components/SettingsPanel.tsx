@@ -92,8 +92,8 @@ const SettingsPanelComponent: React.FC<SettingsPanelProps> = ({ isOpen, onClose 
   const { exportData, importData: importStoreData, reset, getStats } = useAppStore();
   const { announceMessage } = useAccessibility();
 
-  // Memoize stats to prevent excessive recalculation
-  const stats = React.useMemo(() => getStats(), [getStats]);
+  // Get stats directly without problematic useMemo dependency
+  const stats = getStats();
 
   // Load models when API key is set
   useEffect(() => {

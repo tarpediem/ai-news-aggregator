@@ -563,13 +563,7 @@ export const useUserPreferences = () => useAppStore((state) => ({
   markAsRead: state.markAsRead,
   isRead: state.isRead,
   clearSearchHistory: state.clearSearchHistory,
-}), (a, b) => {
-  // Shallow equality check to prevent unnecessary re-renders
-  return JSON.stringify(a.preferences) === JSON.stringify(b.preferences) && 
-         a.bookmarks.length === b.bookmarks.length && 
-         a.readArticles.length === b.readArticles.length && 
-         a.searchHistory.length === b.searchHistory.length;
-});
+}));
 
 export const useUISettings = () => useAppStore((state) => ({
   theme: state.theme,
@@ -590,17 +584,7 @@ export const useUISettings = () => useAppStore((state) => ({
   toggleSidebar: state.toggleSidebar,
   setSidebarPinned: state.setSidebarPinned,
   setSidebarWidth: state.setSidebarWidth,
-}), (a, b) => {
-  // Shallow equality check to prevent unnecessary re-renders
-  return a.theme === b.theme && 
-         a.layout === b.layout && 
-         a.sortBy === b.sortBy && 
-         a.sortOrder === b.sortOrder && 
-         a.showThumbnails === b.showThumbnails && 
-         a.fontSize === b.fontSize && 
-         a.density === b.density && 
-         JSON.stringify(a.sidebar) === JSON.stringify(b.sidebar);
-});
+}));
 
 // Store subscriptions for side effects with circuit breaker protection
 let subscriptionActive = false;
