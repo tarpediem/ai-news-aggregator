@@ -1,10 +1,13 @@
 import { Brain, Sparkles, Loader, AlertTriangle, CheckCircle } from 'lucide-react';
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 
 import { cn } from '../lib/utils';
 import { aiService } from '../services/aiService';
 import type { SummarizationResult, SummarizationOptions } from '../types/ai';
 import type { NewsArticle } from '../types/news';
+import { useSafeCallback } from '../hooks/useSafeCallback';
+import { useSafeMemo } from '../hooks/useSafeMemo';
+import { SafeComponentErrorBoundary } from './SafeErrorBoundary';
 
 import { NewsCard } from './NewsCard';
 import { ShimmerButton } from './ui/shimmer-button';
@@ -28,7 +31,8 @@ export const AIEnhancedNewsCard: React.FC<AIEnhancedNewsCardProps> = ({
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [showAISummary, setShowAISummary] = useState(false);
 
-  const generateSummary = useCallback(async () => {
+  // Safe callback to prevent multiple simultaneous requests
+  const [generateSummary] = useSafeCallback(async () => {
     if (!aiService.getSettings()?.apiKey) {
       setSummaryError('OpenRouter API key not configured. Please check settings.');
       return;
@@ -56,29 +60,44 @@ export const AIEnhancedNewsCard: React.FC<AIEnhancedNewsCardProps> = ({
     } finally {
       setIsGeneratingSummary(false);
     }
-  }, [article]);
+  }, [article], {
+    callbackId: `ai-summary-${article.id}`,
+    maxExecutionsPerSecond: 1, // Prevent spamming AI requests
+    debounceMs: 500
+  });
 
-  const getSentimentColor = (sentiment?: string) => {
-    switch (sentiment) {
-      case 'positive': return 'text-green-600 dark:text-green-400';
-      case 'negative': return 'text-red-600 dark:text-red-400';
-      case 'neutral': return 'text-gray-600 dark:text-gray-400';
-      default: return 'text-gray-600 dark:text-gray-400';
-    }
-  };
+  // Safe memo for sentiment color calculation
+  const [getSentimentColor] = useSafeMemo(() => {
+    return (sentiment?: string) => {
+      switch (sentiment) {
+        case 'positive': return 'text-green-600 dark:text-green-400';
+        case 'negative': return 'text-red-600 dark:text-red-400';
+        case 'neutral': return 'text-gray-600 dark:text-gray-400';
+        default: return 'text-gray-600 dark:text-gray-400';
+      }
+    };
+  }, [], {
+    memoId: `sentiment-color-${article.id}`
+  });
 
-  const getSentimentIcon = (sentiment?: string) => {
-    switch (sentiment) {
-      case 'positive': return '😊';
-      case 'negative': return '😔';
-      case 'neutral': return '😐';
-      default: return '🤔';
-    }
-  };
+  // Safe memo for sentiment icon calculation
+  const [getSentimentIcon] = useSafeMemo(() => {
+    return (sentiment?: string) => {
+      switch (sentiment) {
+        case 'positive': return '😊';
+        case 'negative': return '😔';
+        case 'neutral': return '😐';
+        default: return '🤔';
+      }
+    };
+  }, [], {
+    memoId: `sentiment-icon-${article.id}`
+  });
 
   return (
-    <div className="relative">
-      <NewsCard article={article} priority={priority} lazy={lazy} />
+    <SafeComponentErrorBoundary componentId={`ai-enhanced-card-${article.id}`}>
+      <div className="relative">
+        <NewsCard article={article} priority={priority} lazy={lazy} />
       
       {enableAISummary && (
         <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
@@ -210,6 +229,7 @@ export const AIEnhancedNewsCard: React.FC<AIEnhancedNewsCardProps> = ({
           )}
         </div>
       )}
-    </div>
+      </div>
+    </SafeComponentErrorBoundary>
   );
 };

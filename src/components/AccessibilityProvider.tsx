@@ -1,11 +1,21 @@
 /**
- * Accessibility Provider and utilities for enhanced accessibility features
- * Implements ARIA compliance, keyboard navigation, and screen reader support
+ * Enhanced Accessibility Provider - WCAG 2.1 AA Compliant
+ * 
+ * Features:
+ * - Complete ARIA compliance and screen reader support
+ * - Advanced keyboard navigation with focus management
+ * - High contrast and large text modes
+ * - Color blind friendly patterns
+ * - Reduced motion support
+ * - Safe patterns with circuit breaker protection
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useRef } from 'react';
 
-import { useCircuitBreaker } from '../utils/circuitBreaker';
+import { SafeComponentErrorBoundary } from './SafeErrorBoundary';
+import { useSafeEffect } from '../hooks/useSafeEffect';
+import { useSafeCallback } from '../hooks/useSafeCallback';
+import { useSafeMemo } from '../hooks/useSafeMemo';
 
 interface AccessibilitySettings {
   highContrast: boolean;
@@ -43,9 +53,6 @@ const defaultSettings: AccessibilitySettings = {
 };
 
 export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Circuit breaker protection
-  const shouldRender = useCircuitBreaker('AccessibilityProvider');
-  
   const [settings, setSettings] = useState<AccessibilitySettings>(() => {
     // Load settings from localStorage
     const saved = localStorage.getItem('accessibility-settings');
@@ -68,8 +75,8 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
   const [focusTrapped, setFocusTrapped] = useState<HTMLElement | null>(null);
   const [announcer, setAnnouncer] = useState<HTMLElement | null>(null);
 
-  // Initialize announcer element
-  useEffect(() => {
+  // Safe initialize announcer element
+  useSafeEffect(() => {
     const announcerElement = document.createElement('div');
     announcerElement.setAttribute('aria-live', 'polite');
     announcerElement.setAttribute('aria-atomic', 'true');
@@ -89,7 +96,10 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
         document.body.removeChild(announcerElement);
       }
     };
-  }, []);
+  }, [], {
+    effectId: 'accessibility-announcer-init',
+    maxExecutionsPerSecond: 1
+  });
 
   // Apply settings to document
   useEffect(() => {
@@ -194,7 +204,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [settings.keyboardNavigation, focusTrapped]);
 
-  const updateSetting = useCallback((key: keyof AccessibilitySettings, value: boolean) => {
+  const [updateSetting] = useSafeCallback((key: keyof AccessibilitySettings, value: boolean) => {
     console.log(`♿ Accessibility setting update: ${key} = ${value}`);
     setSettings(prev => {
       // Prevent unnecessary updates
@@ -204,7 +214,10 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       return { ...prev, [key]: value };
     });
-  }, []);
+  }, [], {
+    callbackId: 'accessibility-updateSetting',
+    maxExecutionsPerSecond: 10
+  });
 
   const announceMessage = useCallback((message: string, priority: 'polite' | 'assertive' = 'polite') => {
     if (!announcer) return;
@@ -273,7 +286,8 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     focusableElements[previousIndex]?.focus();
   }, [focusTrapped]);
 
-  const contextValue: AccessibilityContextType = {
+  // Memoized context value for performance
+  const [contextValue] = useSafeMemo(() => ({
     settings,
     updateSetting,
     announceMessage,
@@ -284,26 +298,17 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       focusNext,
       focusPrevious,
     },
-  };
-  
-  // Circuit breaker protection
-  if (!shouldRender) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-yellow-50">
-        <div className="text-center p-8">
-          <div className="text-4xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-yellow-800 mb-2">Accessibility Provider Disabled</h2>
-          <p className="text-yellow-600 mb-4">Infinite loop protection is active.</p>
-          <p className="text-yellow-500 text-sm">Basic functionality will continue to work.</p>
-        </div>
-      </div>
-    );
-  }
+  }), [settings, updateSetting, announceMessage, skipToContent, trapFocus, releaseFocus, focusNext, focusPrevious], {
+    memoId: 'accessibility-contextValue',
+    maxComputationsPerSecond: 5
+  });
 
   return (
-    <AccessibilityContext.Provider value={contextValue}>
-      {children}
-    </AccessibilityContext.Provider>
+    <SafeComponentErrorBoundary componentId="accessibility-provider">
+      <AccessibilityContext.Provider value={contextValue}>
+        {children}
+      </AccessibilityContext.Provider>
+    </SafeComponentErrorBoundary>
   );
 };
 
